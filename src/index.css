@@ -1,0 +1,1145 @@
+/* ==========================================================================
+   Dear Tomorrow — Whimsical Vintage Theme System
+   ========================================================================== */
+
+:root {
+  --color-vintage-brown: #4A3026;
+  --color-warm-chocolate: #6B4938;
+  --color-antique-beige: #DCC7A5;
+  --color-aged-cream: #F5EBDD;
+  --color-muted-caramel: #B58B62;
+  --color-soft-ivory: #FFF9F0;
+  --color-wax-crimson: #8C2D19;
+  --color-wax-crimson-dark: #6D1F0F;
+  --color-gold-dust: #E8C581;
+  --color-gold-bright: #F5D698;
+  --color-shadow-brown: rgba(74, 48, 38, 0.18);
+  --color-shadow-deep: rgba(74, 48, 38, 0.32);
+
+  --font-display: 'Cinzel Decorative', Georgia, serif;
+  --font-heading: 'Playfair Display', Georgia, serif;
+  --font-body: 'Cormorant Garamond', Georgia, serif;
+  --font-handwritten: 'Caveat', cursive, sans-serif;
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  --transition-gentle: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Reset & Base */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+  background-color: var(--color-vintage-brown);
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--color-vintage-brown);
+  background-color: #2F1E17;
+  /* Deep textured vintage backdrop */
+  background-image: 
+    radial-gradient(circle at 15% 20%, rgba(107, 73, 56, 0.4) 0%, transparent 40%),
+    radial-gradient(circle at 85% 65%, rgba(181, 139, 98, 0.2) 0%, transparent 45%),
+    radial-gradient(circle at 50% 100%, rgba(74, 48, 38, 0.8) 0%, transparent 60%);
+  background-attachment: fixed;
+  line-height: 1.65;
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Subtle Starfield & Floating Sparkles */
+.celestial-dust {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.dust-particle {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, #FFF9F0 0%, rgba(232, 197, 129, 0.8) 50%, transparent 100%);
+  opacity: 0.6;
+  animation: floatParticle 14s infinite ease-in-out;
+}
+
+@keyframes floatParticle {
+  0% {
+    transform: translateY(100vh) translateX(0) scale(0.6);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.8;
+  }
+  80% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateY(-20vh) translateX(40px) scale(1.1);
+    opacity: 0;
+  }
+}
+
+/* Page Layout Container */
+.page-container {
+  position: relative;
+  z-index: 1;
+  max-width: 940px;
+  margin: 0 auto;
+  padding: 32px 20px 80px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+
+/* Typography Utilities */
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-heading {
+  font-family: var(--font-heading);
+}
+
+.font-body {
+  font-family: var(--font-body);
+}
+
+.font-handwritten {
+  font-family: var(--font-handwritten);
+}
+
+/* Header & Navigation Bar */
+.vintage-navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-radius: 16px;
+  background: rgba(74, 48, 38, 0.75);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(220, 199, 165, 0.25);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  color: var(--color-aged-cream);
+}
+
+.brand-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.brand-logo-icon {
+  font-size: 26px;
+  filter: drop-shadow(0 2px 8px rgba(232, 197, 129, 0.4));
+  animation: gentlePulse 3s infinite ease-in-out;
+}
+
+.brand-title-wrap h1 {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  letter-spacing: 1px;
+  color: var(--color-soft-ivory);
+  margin: 0;
+  font-weight: 600;
+}
+
+.brand-title-wrap p {
+  font-size: 11px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--color-antique-beige);
+  margin: 0;
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.pill-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  background: rgba(220, 199, 165, 0.15);
+  border: 1px solid rgba(220, 199, 165, 0.3);
+  color: var(--color-antique-beige);
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #8FD175;
+  box-shadow: 0 0 8px #8FD175;
+  animation: blinkDot 2.4s infinite;
+}
+
+@keyframes blinkDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+/* ==========================================================================
+   Hero Section
+   ========================================================================== */
+
+.hero-section {
+  text-align: center;
+  padding: 24px 16px 12px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.hero-ornament {
+  font-size: 18px;
+  letter-spacing: 6px;
+  color: var(--color-gold-dust);
+  opacity: 0.9;
+  text-shadow: 0 0 12px rgba(232, 197, 129, 0.4);
+}
+
+.hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 6vw, 4.4rem);
+  color: var(--color-soft-ivory);
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  line-height: 1.15;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 30px rgba(220, 199, 165, 0.15);
+}
+
+.hero-tagline {
+  font-family: var(--font-heading);
+  font-style: italic;
+  font-size: clamp(1.2rem, 2.5vw, 1.7rem);
+  color: var(--color-antique-beige);
+  max-width: 680px;
+  margin: 0 auto;
+  line-height: 1.4;
+}
+
+.hero-description {
+  font-size: clamp(1.05rem, 1.8vw, 1.25rem);
+  color: var(--color-aged-cream);
+  max-width: 640px;
+  line-height: 1.75;
+  opacity: 0.95;
+  font-weight: 400;
+}
+
+/* Magical Vintage Mailbox Illustration */
+.hero-art-container {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  margin: 12px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.vintage-art-card {
+  position: relative;
+  width: 100%;
+  padding: 24px;
+  border-radius: 20px;
+  background: linear-gradient(145deg, rgba(74, 48, 38, 0.7), rgba(47, 30, 23, 0.85));
+  border: 1px solid rgba(220, 199, 165, 0.35);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.floating-wings {
+  position: absolute;
+  top: 10px;
+  font-size: 24px;
+  opacity: 0.6;
+  animation: floatWings 4s ease-in-out infinite;
+}
+
+.floating-wings.left { left: 16px; }
+.floating-wings.right { right: 16px; animation-delay: 2s; }
+
+@keyframes floatWings {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(4deg); }
+}
+
+/* Envelope illustration inside hero */
+.envelope-svg-wrap {
+  width: 220px;
+  height: 160px;
+  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.4));
+  transition: var(--transition-gentle);
+}
+
+.envelope-svg-wrap:hover {
+  transform: translateY(-4px) scale(1.02);
+}
+
+/* Primary Hero Button */
+.btn-hero-write {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px 36px;
+  border-radius: 40px;
+  background: linear-gradient(135deg, #6B4938 0%, #4A3026 100%);
+  color: var(--color-soft-ivory);
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+  letter-spacing: 0.8px;
+  text-decoration: none;
+  cursor: pointer;
+  border: 2px solid var(--color-antique-beige);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 16px rgba(220, 199, 165, 0.2);
+  transition: var(--transition-gentle);
+}
+
+.btn-hero-write:hover {
+  transform: translateY(-3px) scale(1.02);
+  border-color: var(--color-gold-dust);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 24px rgba(232, 197, 129, 0.4);
+  color: #FFF;
+}
+
+.btn-hero-write:active {
+  transform: translateY(1px);
+}
+
+/* ==========================================================================
+   Parchment Letter-Writing Journal (The Main Sheet)
+   ========================================================================== */
+
+.parchment-sheet {
+  position: relative;
+  background: var(--color-aged-cream);
+  border-radius: 16px;
+  padding: 48px 42px;
+  color: var(--color-vintage-brown);
+  border: 1px solid var(--color-antique-beige);
+  box-shadow: 
+    0 24px 64px rgba(0, 0, 0, 0.45),
+    inset 0 0 60px rgba(181, 139, 98, 0.25),
+    0 0 0 8px rgba(74, 48, 38, 0.4);
+  transition: var(--transition-gentle);
+}
+
+@media (max-width: 640px) {
+  .parchment-sheet {
+    padding: 28px 18px;
+  }
+}
+
+/* Deckle edge / vintage paper border accent */
+.parchment-sheet::before {
+  content: '';
+  position: absolute;
+  inset: 12px;
+  border: 1px dashed rgba(107, 73, 56, 0.35);
+  border-radius: 10px;
+  pointer-events: none;
+}
+
+/* Corner stamps & embellishments */
+.corner-ornament {
+  position: absolute;
+  color: var(--color-muted-caramel);
+  font-size: 16px;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.corner-ornament.top-left { top: 18px; left: 22px; }
+.corner-ornament.top-right { top: 18px; right: 22px; }
+.corner-ornament.bottom-left { bottom: 18px; left: 22px; }
+.corner-ornament.bottom-right { bottom: 18px; right: 22px; }
+
+/* Journal Spine / Header */
+.journal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 2px solid var(--color-antique-beige);
+  padding-bottom: 24px;
+  margin-bottom: 32px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.journal-title-box h2 {
+  font-family: var(--font-heading);
+  font-size: clamp(1.8rem, 3.5vw, 2.4rem);
+  font-weight: 600;
+  color: var(--color-vintage-brown);
+  letter-spacing: 0.5px;
+}
+
+.journal-title-box p {
+  font-size: 1.05rem;
+  color: var(--color-warm-chocolate);
+  font-style: italic;
+  margin-top: 4px;
+}
+
+.postmark-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border: 2px dashed var(--color-warm-chocolate);
+  border-radius: 8px;
+  background: rgba(255, 249, 240, 0.6);
+  color: var(--color-warm-chocolate);
+  text-align: center;
+  transform: rotate(-1.5deg);
+  box-shadow: 0 2px 8px rgba(74, 48, 38, 0.08);
+}
+
+.postmark-badge span:first-child {
+  font-size: 10px;
+  letter-spacing: 2px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.postmark-badge span:last-child {
+  font-family: var(--font-handwritten);
+  font-size: 16px;
+  color: var(--color-vintage-brown);
+}
+
+/* ==========================================================================
+   Form Sections & Inputs
+   ========================================================================== */
+
+.form-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+}
+
+.section-block {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.section-label {
+  font-family: var(--font-heading);
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--color-vintage-brown);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-subtext {
+  font-size: 0.95rem;
+  color: var(--color-warm-chocolate);
+  font-style: italic;
+}
+
+/* Title Input */
+.vintage-input-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.input-label-sm {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+  color: var(--color-warm-chocolate);
+}
+
+.vintage-input {
+  width: 100%;
+  padding: 14px 18px;
+  background: rgba(255, 249, 240, 0.85);
+  border: 1.5px solid var(--color-antique-beige);
+  border-radius: 8px;
+  font-family: var(--font-body);
+  font-size: 1.15rem;
+  color: var(--color-vintage-brown);
+  box-shadow: inset 0 2px 6px rgba(74, 48, 38, 0.05);
+  outline: none;
+  transition: var(--transition-gentle);
+}
+
+.vintage-input:focus {
+  background: #FFF;
+  border-color: var(--color-muted-caramel);
+  box-shadow: 0 0 0 3px rgba(181, 139, 98, 0.25), inset 0 2px 6px rgba(74, 48, 38, 0.05);
+}
+
+.vintage-input::placeholder {
+  color: #9C8577;
+  font-style: italic;
+}
+
+/* Prompt Chips / Writing Inspirations */
+.inspiration-chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.chip-label {
+  font-size: 0.85rem;
+  color: var(--color-warm-chocolate);
+  font-style: italic;
+  margin-right: 4px;
+}
+
+.inspiration-btn {
+  background: rgba(220, 199, 165, 0.25);
+  border: 1px solid rgba(181, 139, 98, 0.4);
+  border-radius: 16px;
+  padding: 4px 12px;
+  font-size: 0.88rem;
+  color: var(--color-vintage-brown);
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: var(--transition-gentle);
+}
+
+.inspiration-btn:hover {
+  background: var(--color-soft-ivory);
+  border-color: var(--color-muted-caramel);
+  transform: translateY(-1px);
+}
+
+/* Diary Multiline Textarea */
+.diary-textarea-wrap {
+  position: relative;
+  background: rgba(255, 249, 240, 0.95);
+  border: 2px solid var(--color-antique-beige);
+  border-radius: 12px;
+  box-shadow: 
+    inset 0 3px 8px rgba(74, 48, 38, 0.06),
+    0 4px 12px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+  transition: var(--transition-gentle);
+}
+
+.diary-textarea-wrap:focus-within {
+  border-color: var(--color-muted-caramel);
+  background: #FFFFFF;
+  box-shadow: 
+    0 0 0 4px rgba(181, 139, 98, 0.2),
+    inset 0 2px 8px rgba(74, 48, 38, 0.04);
+}
+
+/* Ruled paper lined texture effect inside textarea */
+.diary-textarea {
+  width: 100%;
+  min-height: 300px;
+  box-sizing: border-box;
+  padding: 10px 22px 20px 22px;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: vertical;
+  font-family: var(--font-body);
+  font-size: 20px;
+  line-height: 38px;
+  color: var(--color-vintage-brown);
+  /* Lined diary guide lines aligned with text baseline */
+  background-image: linear-gradient(to bottom, transparent 37px, rgba(181, 139, 98, 0.3) 37px, rgba(181, 139, 98, 0.3) 38px);
+  background-size: 100% 38px;
+  background-position: 0 0;
+  background-attachment: local;
+}
+
+.diary-textarea::placeholder {
+  color: #9C8577;
+  font-style: italic;
+  font-size: 20px;
+  line-height: 38px;
+  opacity: 0.85;
+}
+
+/* Writing Meta Bar (counts, draft status) */
+.diary-meta-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background: rgba(220, 199, 165, 0.3);
+  border-top: 1px solid var(--color-antique-beige);
+  font-size: 0.9rem;
+  color: var(--color-warm-chocolate);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.draft-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-handwritten);
+  font-size: 1.15rem;
+  color: var(--color-warm-chocolate);
+}
+
+.clear-draft-link {
+  background: none;
+  border: none;
+  color: #9C5A48;
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  font-family: var(--font-body);
+}
+
+.clear-draft-link:hover {
+  color: #7A3525;
+}
+
+/* ==========================================================================
+   Date Selection System
+   ========================================================================== */
+
+/* Date Presets Row */
+.date-presets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.preset-date-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(255, 249, 240, 0.7);
+  border: 1px solid var(--color-antique-beige);
+  color: var(--color-vintage-brown);
+  font-size: 0.95rem;
+  font-family: var(--font-body);
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition-gentle);
+}
+
+.preset-date-btn:hover {
+  background: var(--color-soft-ivory);
+  border-color: var(--color-muted-caramel);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(74, 48, 38, 0.08);
+}
+
+.preset-date-btn.active {
+  background: var(--color-warm-chocolate);
+  border-color: var(--color-warm-chocolate);
+  color: var(--color-soft-ivory);
+  box-shadow: 0 3px 8px rgba(74, 48, 38, 0.2);
+}
+
+/* Custom Day, Month, Year, and Time Selectors */
+.date-controls-grid {
+  display: grid;
+  grid-template-columns: 2fr 1.2fr 1.5fr;
+  gap: 12px;
+}
+
+@media (max-width: 600px) {
+  .date-controls-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.vintage-select {
+  width: 100%;
+  padding: 12px 14px;
+  background: rgba(255, 249, 240, 0.9);
+  border: 1.5px solid var(--color-antique-beige);
+  border-radius: 8px;
+  font-family: var(--font-body);
+  font-size: 1.1rem;
+  color: var(--color-vintage-brown);
+  outline: none;
+  cursor: pointer;
+  transition: var(--transition-gentle);
+}
+
+.vintage-select:focus {
+  background: #FFF;
+  border-color: var(--color-muted-caramel);
+  box-shadow: 0 0 0 3px rgba(181, 139, 98, 0.2);
+}
+
+/* Time Picker & Timezone Bar */
+.delivery-time-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: rgba(255, 249, 240, 0.6);
+  border: 1px solid var(--color-antique-beige);
+  border-radius: 8px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.time-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.time-select-sm {
+  padding: 8px 12px;
+  background: #FFF;
+  border: 1px solid var(--color-antique-beige);
+  border-radius: 6px;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--color-vintage-brown);
+  cursor: pointer;
+}
+
+.time-number-input {
+  width: 68px;
+  padding: 7px 8px;
+  text-align: center;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.number-field {
+  padding: 12px 14px;
+}
+
+/* Formatted Delivery Date Display Ribbon */
+.date-preview-ribbon {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  background: linear-gradient(135deg, rgba(220, 199, 165, 0.4) 0%, rgba(245, 235, 221, 0.8) 100%);
+  border: 1px solid var(--color-antique-beige);
+  border-left: 4px solid var(--color-warm-chocolate);
+  border-radius: 8px;
+}
+
+.calendar-mini-icon {
+  font-size: 24px;
+  color: var(--color-warm-chocolate);
+}
+
+.date-preview-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.date-preview-main {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-vintage-brown);
+}
+
+.date-preview-sub {
+  font-size: 0.95rem;
+  color: var(--color-warm-chocolate);
+  font-style: italic;
+}
+
+/* ==========================================================================
+   Destination Email & Recipient Section
+   ========================================================================== */
+
+.recipient-type-toggle {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.toggle-pill {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(255, 249, 240, 0.7);
+  border: 1.5px solid var(--color-antique-beige);
+  color: var(--color-vintage-brown);
+  font-family: var(--font-body);
+  font-size: 1.05rem;
+  cursor: pointer;
+  text-align: center;
+  transition: var(--transition-gentle);
+}
+
+.toggle-pill.active {
+  background: var(--color-warm-chocolate);
+  border-color: var(--color-warm-chocolate);
+  color: var(--color-soft-ivory);
+  font-weight: 600;
+}
+
+.email-security-note {
+  font-size: 0.9rem;
+  color: var(--color-warm-chocolate);
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ==========================================================================
+   Sealing Submission Button & Wax Seal Effects
+   ========================================================================== */
+
+.submit-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding-top: 24px;
+  border-top: 2px solid var(--color-antique-beige);
+}
+
+.btn-seal-letter {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 18px 42px;
+  border-radius: 44px;
+  background: linear-gradient(135deg, #7A2816 0%, #5E1D10 100%);
+  color: var(--color-soft-ivory);
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  border: 2px solid var(--color-antique-beige);
+  box-shadow: 
+    0 10px 28px rgba(74, 48, 38, 0.35),
+    0 0 0 4px rgba(140, 45, 25, 0.25),
+    inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: var(--transition-gentle);
+}
+
+.btn-seal-letter:hover:not(:disabled) {
+  transform: translateY(-3px) scale(1.02);
+  border-color: var(--color-gold-dust);
+  box-shadow: 
+    0 14px 36px rgba(74, 48, 38, 0.45),
+    0 0 24px rgba(232, 197, 129, 0.4),
+    inset 0 1px 1px rgba(255, 255, 255, 0.3);
+}
+
+.btn-seal-letter:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn-seal-letter:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Wax seal stamp ornament on button */
+.wax-stamp-emblem {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #4C150A;
+  border: 2px solid var(--color-antique-beige);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--color-gold-dust);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Inline Validation Alert */
+.validation-toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  background: #FFF0EB;
+  border: 1px solid #E4B5A5;
+  color: #7A2816;
+  font-size: 1rem;
+  max-width: 520px;
+  text-align: center;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================================================
+   Confirmation Card (One-Page in-place)
+   ========================================================================== */
+
+.confirmation-card {
+  position: relative;
+  background: var(--color-aged-cream);
+  border-radius: 20px;
+  padding: 56px 42px;
+  color: var(--color-vintage-brown);
+  border: 2px solid var(--color-antique-beige);
+  box-shadow: 
+    0 24px 64px rgba(0, 0, 0, 0.5),
+    inset 0 0 80px rgba(181, 139, 98, 0.25);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  animation: sealPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes sealPop {
+  0% { transform: scale(0.92); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.confirmation-envelope-graphic {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  margin: 0 auto;
+}
+
+.giant-wax-seal {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #9E3520 0%, #6D1F0F 100%);
+  border: 4px double var(--color-antique-beige);
+  box-shadow: 0 10px 24px rgba(74, 48, 38, 0.4), inset 0 3px 6px rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-gold-bright);
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 700;
+  margin: 0 auto;
+  animation: gentlePulse 3s infinite ease-in-out;
+}
+
+@keyframes gentlePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+.confirmation-title {
+  font-family: var(--font-heading);
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  color: var(--color-vintage-brown);
+  line-height: 1.2;
+}
+
+.confirmation-message {
+  font-size: 1.25rem;
+  color: var(--color-warm-chocolate);
+  max-width: 620px;
+  line-height: 1.7;
+  font-style: italic;
+}
+
+.letter-summary-box {
+  width: 100%;
+  max-width: 580px;
+  padding: 24px 28px;
+  background: rgba(255, 249, 240, 0.85);
+  border: 1px dashed var(--color-antique-beige);
+  border-radius: 12px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px dotted rgba(181, 139, 98, 0.4);
+  padding-bottom: 10px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.summary-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.summary-label {
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--color-warm-chocolate);
+  font-weight: 600;
+}
+
+.summary-val {
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+  color: var(--color-vintage-brown);
+  font-weight: 600;
+}
+
+.btn-write-another {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 32px;
+  border-radius: 30px;
+  background: var(--color-warm-chocolate);
+  color: var(--color-soft-ivory);
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  border: 1.5px solid var(--color-antique-beige);
+  cursor: pointer;
+  transition: var(--transition-gentle);
+  box-shadow: 0 6px 18px rgba(74, 48, 38, 0.25);
+}
+
+.btn-write-another:hover {
+  background: var(--color-vintage-brown);
+  border-color: var(--color-gold-dust);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(74, 48, 38, 0.35);
+}
+
+/* ==========================================================================
+   Privacy Notice & Reassurance Section
+   ========================================================================== */
+
+.privacy-card {
+  padding: 32px;
+  border-radius: 16px;
+  background: rgba(74, 48, 38, 0.65);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(220, 199, 165, 0.25);
+  color: var(--color-aged-cream);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.privacy-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-heading);
+  font-size: 1.35rem;
+  color: var(--color-soft-ivory);
+}
+
+.privacy-features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+  margin-top: 8px;
+}
+
+.privacy-feature {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.privacy-feature h4 {
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  color: var(--color-antique-beige);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.privacy-feature p {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  opacity: 0.9;
+}
+
+/* ==========================================================================
+   Footer Section
+   ========================================================================== */
+
+.vintage-footer {
+  text-align: center;
+  padding: 36px 16px 12px 16px;
+  color: var(--color-antique-beige);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.footer-quote {
+  font-family: var(--font-heading);
+  font-style: italic;
+  font-size: 1.3rem;
+  color: var(--color-soft-ivory);
+}
+
+.footer-decor {
+  font-size: 16px;
+  letter-spacing: 6px;
+  color: var(--color-muted-caramel);
+}
+
+.footer-sub {
+  font-size: 0.9rem;
+  opacity: 0.75;
+}
