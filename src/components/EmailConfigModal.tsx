@@ -16,6 +16,7 @@ export const EmailConfigModal: React.FC<EmailConfigModalProps> = ({
 }) => {
   const [providerType, setProviderType] = useState<'gmail' | 'resend'>('gmail');
   const [gmailUser, setGmailUser] = useState(defaultEmail);
+  const [testRecipient, setTestRecipient] = useState(defaultEmail);
   const [gmailAppPass, setGmailAppPass] = useState('');
   const [resendKey, setResendKey] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -65,17 +66,18 @@ export const EmailConfigModal: React.FC<EmailConfigModalProps> = ({
       }
 
       // 2. Immediately send a test verification email to the user's Gmail!
+      const targetInbox = testRecipient.trim() || gmailUser.trim() || defaultEmail;
       const testRes = await fetch('/api/letters/send-test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipientEmail: gmailUser.trim() || defaultEmail }),
+        body: JSON.stringify({ recipientEmail: targetInbox }),
       });
 
       const testData = await testRes.json();
-      if (testData.success) {
+      if (testRes.ok && testData.success) {
         setFeedback({
           type: 'success',
-          message: `Connected successfully! A verification test letter has been dispatched to ${gmailUser.trim() || defaultEmail}. Check your inbox!`,
+          message: `Connected successfully! A verification test letter has been dispatched to ${targetInbox}. Check your inbox!`,
         });
         if (onConfigSaved) onConfigSaved();
       } else {
@@ -179,25 +181,52 @@ export const EmailConfigModal: React.FC<EmailConfigModalProps> = ({
                 <label className="input-label-sm">
                   Google 16-Character App Password
                 </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="text"
+                    value={gmailAppPass}
+                    onChange={(e) => setGmailAppPass(e.target.value)}
+                    placeholder="e.g. abcd efgh ijkl mnop"
+                    className="vintage-input"
+                    required
+                    style={{ fontFamily: 'monospace', letterSpacing: '1px' }}
+                  />
+                </div>
+                <div style={{ background: 'rgba(232, 197, 129, 0.25)', border: '1px dashed #B58B62', borderRadius: '8px', padding: '10px 14px', marginTop: '8px', fontSize: '0.85rem', color: '#4A3026' }}>
+                  <strong style={{ display: 'block', marginBottom: '4px', color: '#8C2D19' }}>📌 How to get your 16-character Google App Password:</strong>
+                  <ol style={{ margin: '4px 0 0 16px', padding: 0, lineHeight: '1.5' }}>
+                    <li>Make sure <strong>2-Step Verification</strong> is ON in your Google Account.</li>
+                    <li>
+                      Visit{' '}
+                      <a
+                        href="https://myaccount.google.com/apppasswords"
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ color: '#8C2D19', fontWeight: 'bold', textDecoration: 'underline' }}
+                      >
+                        myaccount.google.com/apppasswords <ExternalLink size={11} style={{ display: 'inline' }} />
+                      </a>
+                    </li>
+                    <li>Type App name: <em>Dear Tomorrow</em> and click <strong>Create</strong>.</li>
+                    <li>Copy the 16 letters shown and paste them here!</li>
+                  </ol>
+                  <span style={{ display: 'block', marginTop: '6px', fontStyle: 'italic', color: '#6B4938' }}>
+                    Note: Never use your regular Google account password here. Google requires App Passwords for SMTP.
+                  </span>
+                </div>
+              </div>
+
+              <div className="vintage-input-wrap">
+                <label className="input-label-sm">Send Verification Test Email To</label>
                 <input
-                  type="password"
-                  value={gmailAppPass}
-                  onChange={(e) => setGmailAppPass(e.target.value)}
-                  placeholder="e.g. abcd efgh ijkl mnop"
+                  type="email"
+                  value={testRecipient}
+                  onChange={(e) => setTestRecipient(e.target.value)}
+                  placeholder="customer@gmail.com"
                   className="vintage-input"
-                  required
                 />
-                <span style={{ fontSize: '0.85rem', color: 'var(--color-warm-chocolate)', marginTop: '4px' }}>
-                  Generate in Google Security → App Passwords ({' '}
-                  <a
-                    href="https://myaccount.google.com/apppasswords"
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ color: '#8C2D19', textDecoration: 'underline' }}
-                  >
-                    myaccount.google.com/apppasswords <ExternalLink size={12} style={{ display: 'inline' }} />
-                  </a>
-                  )
+                <span style={{ fontSize: '0.8rem', color: 'var(--color-warm-chocolate)', marginTop: '2px' }}>
+                  We'll send a live test letter to this address immediately upon saving to verify delivery.
                 </span>
               </div>
             </>

@@ -24,6 +24,9 @@ export const ConfirmationCard = ({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [letterStatus, setLetterStatus] = useState<string>('pending');
+  const [isSendingNow, setIsSendingNow] = useState(false);
+  const [sendNowError, setSendNowError] = useState<string | null>(null);
+  const [sendNowSuccess, setSendNowSuccess] = useState<string | null>(null);
 
   const deliveryDateObj = new Date(letterData.deliverAt);
   const formattedDeliveryDate = deliveryDateObj.toLocaleDateString('en-US', {
@@ -69,6 +72,33 @@ export const ConfirmationCard = ({
     };
   }, [letterData.id]);
 
+  const handleSendLetterNow = async () => {
+    try {
+      setIsSendingNow(true);
+      setSendNowError(null);
+      setSendNowSuccess(null);
+
+      const res = await fetch(`/api/letters/${letterData.id}/send-now`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setLetterStatus('delivered');
+        setSendNowSuccess(`Letter successfully sent to ${letterData.recipientEmail}! Check your Gmail.`);
+        if (data.previewUrl) {
+          setPreviewUrl(data.previewUrl);
+        }
+      } else {
+        setSendNowError(data.error || 'Failed to dispatch letter to recipient email.');
+      }
+    } catch (err: any) {
+      setSendNowError(err.message || 'Network error attempting to send letter.');
+    } finally {
+      setIsSendingNow(false);
+    }
+  };
+
   const handleSendTestSample = async () => {
     try {
       setTestLoading(true);
@@ -79,13 +109,13 @@ export const ConfirmationCard = ({
         body: JSON.stringify({ recipientEmail: letterData.recipientEmail }),
       });
       const data = await res.json();
-      if (res.ok) {
+      if (res.ok && data.success) {
         setTestSent(true);
         if (data.previewUrl) {
           setPreviewUrl(data.previewUrl);
           setTestMessage('Delivered to test sandbox! You can preview it using the button below.');
         } else {
-          setTestMessage('A test parchment dispatch was sent directly to your inbox!');
+          setTestMessage(`Test sample dispatch sent directly to ${letterData.recipientEmail}!`);
         }
       } else {
         setTestMessage(data.error || 'Could not dispatch test sample.');
@@ -168,6 +198,91 @@ export const ConfirmationCard = ({
           </div>
         </div>
 
+        {/* Immediate Delivery Banner / Feedback */}
+        {sendNowSuccess && (
+          <div style={{ width: '100%', maxWidth: '580px', padding: '14px 18px', background: '#EEF8EC', border: '1.5px solid #B0D9A9', borderRadius: '10px', color: '#1D5A19', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <CheckCircle2 size={22} style={{ flexShrink: 0 }} />
+            <div>
+              <strong style={{ display: 'block', fontSize: '1rem' }}>Dispatched to Gmail!</strong>
+              <span style={{ fontSize: '0.9rem' }}>{sendNowSuccess}</span>
+            </div>
+          </div>
+        )}
+
+        {sendNowError && (
+          <div style={{ width: '100%', maxWidth: '580px', padding: '14px 18px', background: '#FFF0EB', border: '1.5px solid #E4B5A5', borderRadius: '10px', color: '#7A2816', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+              <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+              <div>
+                <strong style={{ display: 'block', fontSize: '1rem' }}>Delivery Error</strong>
+                <span style={{ fontSize: '0.9rem', lineHeight: '1.5' }}>{sendNowError}</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsConfigModalOpen(true)}
+              className="inspiration-btn"
+              style={{ alignSelf: 'flex-start', marginTop: '6px', fontSize: '0.9rem', padding: '6px 14px', background: '#8C2D19', color: '#F5EBDD', borderColor: '#8C2D19' }}
+            >
+              <Settings size={14} style={{ display: 'inline', marginRight: '6px' }} />
+              Open Email Settings to configure Google App Password
+            </button>
+          </div>
+        )}
+
+        {/* Primary Delivery Action: Send This Letter Right Now */}
+        <div style={{ width: '100%', maxWidth: '580px', display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
+          {letterStatus !== 'delivered' ? (
+            <button
+              type="button"
+              onClick={handleSendLetterNow}
+              disabled={isSendingNow}
+              className="btn-hero-write"
+              style={{ width: '100%', fontSize: '1.1rem', padding: '14px 24px', justifyContent: 'center' }}
+            >
+              <span>
+                {isSendingNow
+                  ? `Delivering to ${letterData.recipientEmail}... 📨`
+                  : `✉️ Send This Letter to ${letterData.recipientEmail} Right Now`}
+              </span>
+            </button>
+          ) : (
+            <div style={{ padding: '10px 20px', background: 'rgba(45, 90, 39, 0.12)', border: '1px solid #2D5A27', borderRadius: '8px', color: '#2D5A27', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}>
+              <CheckCircle2 size={18} />
+              <span>Delivered to {letterData.recipientEmail}</span>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center', width: '100%' }}>
+            {!testSent ? (
+              <button
+                type="button"
+                onClick={handleSendTestSample}
+                disabled={testLoading}
+                className="inspiration-btn"
+                style={{ padding: '8px 18px', fontSize: '0.95rem' }}
+              >
+                {testLoading ? 'Dispatching sample...' : '✉️ Send instant test sample'}
+              </button>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#2D5A27', justifyContent: 'center', fontSize: '0.9rem' }}>
+                <CheckCircle2 size={16} />
+                <span>{testMessage || 'Test sample sent!'}</span>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setIsConfigModalOpen(true)}
+              className="inspiration-btn"
+              style={{ padding: '8px 18px', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(140, 45, 25, 0.12)', borderColor: '#8C2D19', color: '#8C2D19' }}
+            >
+              <Settings size={15} />
+              <span>Configure Gmail Credentials ⚙️</span>
+            </button>
+          </div>
+        </div>
+
         {/* Ethereal Preview Button if Sandbox */}
         {previewUrl && (
           <div style={{ width: '100%', maxWidth: '580px', padding: '14px 18px', background: 'rgba(232, 197, 129, 0.25)', border: '1.5px dashed #B58B62', borderRadius: '10px', textAlign: 'center' }}>
@@ -185,38 +300,6 @@ export const ConfirmationCard = ({
             </a>
           </div>
         )}
-
-        {/* Test Sample Email Action & Connect Real Gmail Button */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
-            {!testSent ? (
-              <button
-                type="button"
-                onClick={handleSendTestSample}
-                disabled={testLoading}
-                className="inspiration-btn"
-                style={{ padding: '8px 18px', fontSize: '0.95rem' }}
-              >
-                {testLoading ? 'Dispatching sample...' : '✉️ Send an instant sample preview'}
-              </button>
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#2D5A27', justifyContent: 'center' }}>
-                <CheckCircle2 size={18} />
-                <span>{testMessage || 'Test sample sent!'}</span>
-              </div>
-            )}
-
-            <button
-              type="button"
-              onClick={() => setIsConfigModalOpen(true)}
-              className="inspiration-btn"
-              style={{ padding: '8px 18px', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(140, 45, 25, 0.12)', borderColor: '#8C2D19', color: '#8C2D19' }}
-            >
-              <Settings size={15} />
-              <span>Connect Real Gmail / Resend ⚙️</span>
-            </button>
-          </div>
-        </div>
 
         {/* Button to write another letter */}
         <button

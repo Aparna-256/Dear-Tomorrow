@@ -246,7 +246,7 @@ export const LetterForm: React.FC<LetterFormProps> = ({ onSuccess }) => {
 
   const targetDate = getTargetDate();
   const currentDate = new Date();
-  const isDateInPast = targetDate.getTime() <= currentDate.getTime();
+  const isDateInPast = targetDate.getTime() < currentDate.getTime() - 60000;
 
   // Preset Date Handlers
   const applyPreset = (presetKey: string) => {
@@ -255,6 +255,15 @@ export const LetterForm: React.FC<LetterFormProps> = ({ onSuccess }) => {
     let newDate = new Date();
 
     switch (presetKey) {
+      case 'today':
+        newDate = new Date(base.getTime() + 2 * 60 * 1000); // 2 minutes from now
+        const h24 = newDate.getHours();
+        const p = h24 >= 12 ? 'PM' : 'AM';
+        const h12 = h24 % 12 || 12;
+        setDeliveryHour(h12);
+        setDeliveryMinute(newDate.getMinutes());
+        setDeliveryPeriod(p);
+        break;
       case '6mo':
         newDate = new Date(base.getFullYear(), base.getMonth() + 6, base.getDate());
         break;
@@ -541,6 +550,14 @@ export const LetterForm: React.FC<LetterFormProps> = ({ onSuccess }) => {
 
           {/* Preset Buttons */}
           <div className="date-presets-grid">
+            <button
+              type="button"
+              className={`preset-date-btn ${activePreset === 'today' ? 'active' : ''}`}
+              onClick={() => applyPreset('today')}
+              style={activePreset === 'today' ? { borderColor: '#8C2D19', fontWeight: 'bold' } : undefined}
+            >
+              Today (Send Now ⚡)
+            </button>
             <button
               type="button"
               className={`preset-date-btn ${activePreset === '6mo' ? 'active' : ''}`}

@@ -101,8 +101,8 @@ app.post('/api/letters', rateLimiter, async (req: Request, res: Response) => {
     }
 
     const now = new Date();
-    // Allow a tiny buffer of 30 seconds for clock skew if user picks near-immediate test
-    if (parsedDate.getTime() < now.getTime() - 30000) {
+    // Allow a buffer of 60 seconds for clock skew if user picks near-immediate test
+    if (parsedDate.getTime() < now.getTime() - 60000) {
       return res.status(400).json({
         error: 'Letters cannot travel backwards in time. Please select a date in the future.',
       });
@@ -135,11 +135,11 @@ app.post('/api/letters', rateLimiter, async (req: Request, res: Response) => {
 
     console.log(`[API] Letter #${letterId} scheduled for ${deliverAtIso} (to: ${recipientEmail.trim()})`);
 
-    // If scheduled for practically now (e.g., within 30 seconds for immediate test), trigger scheduler check
-    if (parsedDate.getTime() - now.getTime() <= 30000) {
+    // If scheduled for practically now (e.g., within 60 seconds for immediate test), trigger scheduler check
+    if (parsedDate.getTime() - now.getTime() <= 60000) {
       setTimeout(() => {
         checkAndDispatchDueLetters().catch(console.error);
-      }, 1000);
+      }, 500);
     }
 
     return res.status(201).json({
@@ -156,6 +156,103 @@ app.post('/api/letters', rateLimiter, async (req: Request, res: Response) => {
       error: 'Our time-travelling post failed to save your letter. Please try again.',
       details: err?.message,
     });
+  }
+});
+
+// Dispatch a letter immediately to the customer's recipient email
+app.post('/api/letters/:id/send-now', rateLimiter, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const result = await db.execute({
+      sql: `SELECT id, recipient_email, recipient_name, title, content, deliver_at, timezone, created_at, status FROM letters WHERE id = ?`,
+      args: [id],
+    });
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Letter not found in the archives.' });
+    }
+
+    const letter = result.rows[0] as unknown as {
+      id: string;
+      recipient_email: string;
+      recipient_name?: string | null;
+      title: string;
+      content: string;
+      deliver_at: string;
+      timezone: string;
+      created_at: string;
+      status: string;
+    };
+
+    console.log(`[API] Manual immediate dispatch triggered for letter #${letter.id} to ${letter.recipient_email}`);
+
+    const sendResult = await sendLetterEmail(letter);
+
+    if (sendResult.success) {
+      const deliveredAt = new Date().toISOString();
+      await db.execute({
+        sql: `
+          UPDATE letters 
+          SET status = 'delivered', 
+              delivered_at = ?, 
+              attempts = attempts + 1,
+              last_error = NULL 
+          WHERE id = ?
+        `,
+        args: [deliveredAt, letter.id],
+      });
+
+      await db.execute({
+        sql: `
+          INSERT INTO delivery_logs (letter_id, attempted_at, status, details)
+          VALUES (?, ?, 'delivered', ?)
+        `,
+        args: [
+          letter.id,
+          deliveredAt,
+          JSON.stringify({
+            provider: sendResult.provider,
+            messageId: sendResult.messageId,
+            previewUrl: sendResult.previewUrl,
+          }),
+        ],
+      });
+
+      return res.json({
+        success: true,
+        message: `Letter dispatched successfully to ${letter.recipient_email}!`,
+        provider: sendResult.provider,
+        previewUrl: sendResult.previewUrl,
+      });
+    } else {
+      const attemptedAt = new Date().toISOString();
+      await db.execute({
+        sql: `
+          UPDATE letters 
+          SET attempts = attempts + 1, 
+              last_error = ? 
+          WHERE id = ?
+        `,
+        args: [sendResult.error, letter.id],
+      });
+
+      await db.execute({
+        sql: `
+          INSERT INTO delivery_logs (letter_id, attempted_at, status, details)
+          VALUES (?, ?, 'failed', ?)
+        `,
+        args: [letter.id, attemptedAt, JSON.stringify({ error: sendResult.error })],
+      });
+
+      return res.status(500).json({
+        success: false,
+        error: sendResult.error || 'Failed to dispatch letter to email.',
+        provider: sendResult.provider,
+      });
+    }
+  } catch (err: any) {
+    console.error('[API] Error in send-now:', err);
+    return res.status(500).json({ error: err.message });
   }
 });
 
@@ -263,6 +360,9 @@ app.post('/api/letters/send-test', rateLimiter, async (req: Request, res: Respon
     };
 
     const result = await sendLetterEmail(testLetter);
+    if (!result.success) {
+      return res.status(500).json(result);
+    }
     res.json(result);
   } catch (err: any) {
     res.status(500).json({ error: err.message });

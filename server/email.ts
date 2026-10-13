@@ -179,7 +179,7 @@ export async function sendLetterEmail(letter: LetterRecord): Promise<SendResult>
   // 1. Check for Resend API Key
   if (process.env.RESEND_API_KEY) {
     try {
-      const resend = new Resend(process.env.RESEND_API_KEY);
+      const resend = new Resend(process.env.RESEND_API_KEY.trim());
       const fromEmail = process.env.EMAIL_FROM || 'Dear Tomorrow <letters@deartomorrow.app>';
       const result = await resend.emails.send({
         from: fromEmail,
@@ -200,44 +200,77 @@ export async function sendLetterEmail(letter: LetterRecord): Promise<SendResult>
         provider: 'resend',
       };
     } catch (err: any) {
-      console.error(`[Email] Resend error for letter #${letter.id}:`, err);
-      // Fall through to SMTP or fallback if specified
+      const errMsg = err?.message || String(err);
+      console.error(`[Email] Resend error for letter #${letter.id}:`, errMsg);
+      if (!process.env.SMTP_USER) {
+        return {
+          success: false,
+          error: `Resend delivery failed: ${errMsg}`,
+          provider: 'resend',
+        };
+      }
     }
   }
 
-  // 2. Check for custom SMTP configuration
-  if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+  // 2. Check for custom SMTP configuration (Gmail or generic SMTP)
+  if (process.env.SMTP_USER && process.env.SMTP_PASS) {
     try {
-      const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: Number(process.env.SMTP_PORT) || 587,
-        secure: process.env.SMTP_SECURE === 'true',
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS,
-        },
-      });
+      const host = (process.env.SMTP_HOST || 'smtp.gmail.com').trim();
+      const user = process.env.SMTP_USER.trim();
+      const pass = process.env.SMTP_PASS.trim().replace(/\s+/g, '');
+      const isGmail = host.toLowerCase().includes('gmail') || user.toLowerCase().endsWith('@gmail.com');
+
+      const transportOptions: any = isGmail
+        ? {
+            service: 'gmail',
+            auth: { user, pass },
+          }
+        : {
+            host,
+            port: Number(process.env.SMTP_PORT) || 587,
+            secure: process.env.SMTP_SECURE === 'true',
+            auth: { user, pass },
+          };
+
+      const transporter = nodemailer.createTransport(transportOptions);
 
       const info = await transporter.sendMail({
-        from: process.env.EMAIL_FROM || `"Dear Tomorrow" <${process.env.SMTP_USER}>`,
+        from: process.env.EMAIL_FROM || `"Dear Tomorrow" <${user}>`,
         to: letter.recipient_email,
         subject,
         html,
         text,
       });
 
-      console.log(`[Email] Sent letter #${letter.id} via SMTP to ${letter.recipient_email}`);
+      console.log(`[Email] Successfully dispatched letter #${letter.id} via SMTP to ${letter.recipient_email}`);
       return {
         success: true,
         messageId: info.messageId,
         provider: 'smtp',
       };
     } catch (err: any) {
-      console.error(`[Email] SMTP error for letter #${letter.id}:`, err);
+      const errMsg = err?.message || String(err);
+      console.error(`[Email] SMTP delivery failure for letter #${letter.id}:`, errMsg);
+
+      let friendlyError = errMsg;
+      if (
+        errMsg.includes('535') ||
+        errMsg.includes('BadCredentials') ||
+        errMsg.includes('Username and Password not accepted')
+      ) {
+        friendlyError =
+          'Gmail rejected the password. Google requires a 16-character App Password (not your normal Google account password). Go to https://myaccount.google.com/apppasswords to generate one, then enter it in Email Settings.';
+      }
+
+      return {
+        success: false,
+        error: friendlyError,
+        provider: 'smtp',
+      };
     }
   }
 
-  // 3. Fallback: Ethereal Email test account (generates real web preview link)
+  // 3. Fallback only if NO credentials configured: Ethereal Email test account (generates real web preview link)
   try {
     if (!etherealTransporter) {
       const testAccount = await nodemailer.createTestAccount();
@@ -272,7 +305,6 @@ export async function sendLetterEmail(letter: LetterRecord): Promise<SendResult>
     };
   } catch (err: any) {
     console.warn(`[Email] Could not create Ethereal transporter, falling back to simulated log delivery:`, err?.message);
-    // 4. Safe Simulation Fallback so development never fails to test and record
     return {
       success: true,
       messageId: `sim_${Date.now()}`,
