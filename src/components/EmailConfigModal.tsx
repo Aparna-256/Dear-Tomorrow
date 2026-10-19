@@ -192,8 +192,8 @@ export const EmailConfigModal: React.FC<EmailConfigModalProps> = ({
                     style={{ fontFamily: 'monospace', letterSpacing: '1px' }}
                   />
                 </div>
-                <div style={{ background: 'rgba(232, 197, 129, 0.25)', border: '1px dashed #B58B62', borderRadius: '8px', padding: '10px 14px', marginTop: '8px', fontSize: '0.85rem', color: '#4A3026' }}>
-                  <strong style={{ display: 'block', marginBottom: '4px', color: '#8C2D19' }}>📌 How to get your 16-character Google App Password:</strong>
+                <div style={{ background: '#E2D0B8', border: '1px dashed #A88968', borderRadius: '8px', padding: '10px 14px', marginTop: '8px', fontSize: '0.85rem', color: '#382016' }}>
+                  <strong style={{ display: 'block', marginBottom: '4px', color: '#722F37' }}>📌 How to get your 16-character Google App Password:</strong>
                   <ol style={{ margin: '4px 0 0 16px', padding: 0, lineHeight: '1.5' }}>
                     <li>Make sure <strong>2-Step Verification</strong> is ON in your Google Account.</li>
                     <li>
@@ -202,7 +202,7 @@ export const EmailConfigModal: React.FC<EmailConfigModalProps> = ({
                         href="https://myaccount.google.com/apppasswords"
                         target="_blank"
                         rel="noreferrer"
-                        style={{ color: '#8C2D19', fontWeight: 'bold', textDecoration: 'underline' }}
+                        style={{ color: '#722F37', fontWeight: 'bold', textDecoration: 'underline' }}
                       >
                         myaccount.google.com/apppasswords <ExternalLink size={11} style={{ display: 'inline' }} />
                       </a>
@@ -210,7 +210,7 @@ export const EmailConfigModal: React.FC<EmailConfigModalProps> = ({
                     <li>Type App name: <em>Dear Tomorrow</em> and click <strong>Create</strong>.</li>
                     <li>Copy the 16 letters shown and paste them here!</li>
                   </ol>
-                  <span style={{ display: 'block', marginTop: '6px', fontStyle: 'italic', color: '#6B4938' }}>
+                  <span style={{ display: 'block', marginTop: '6px', fontStyle: 'italic', color: '#634832' }}>
                     Note: Never use your regular Google account password here. Google requires App Passwords for SMTP.
                   </span>
                 </div>
@@ -247,7 +247,7 @@ export const EmailConfigModal: React.FC<EmailConfigModalProps> = ({
                   href="https://resend.com"
                   target="_blank"
                   rel="noreferrer"
-                  style={{ color: '#8C2D19', textDecoration: 'underline' }}
+                  style={{ color: '#722F37', textDecoration: 'underline' }}
                 >
                   resend.com <ExternalLink size={12} style={{ display: 'inline' }} />
                 </a>

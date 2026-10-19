@@ -75,7 +75,11 @@ export function App() {
         {/* Hero Section */}
         <section className="hero-section" aria-label="Welcome and introduction">
           <div className="hero-ornament" aria-hidden="true">
-            ୨୧ ✧ ⋆｡°✩ ☾ ✩°｡⋆ ✧ ୨୧
+            ⋆｡°✩ ୨୧ ✧ ☾ ✧ ୨୧ ✩°｡⋆
+          </div>
+
+          <div className="hero-script-tagline">
+            aesthetic vibes & letters across time
           </div>
 
           <h1 className="hero-title">
@@ -125,7 +129,7 @@ export function App() {
             ⋆｡°✩ ୨୧ ✧ ☾ ✧ ୨୧ ✩°｡⋆
           </div>
           <p className="footer-quote">
-            “Made for the person you're becoming. ☾”
+            “Made for the person you're becoming ☾”
           </p>
           <p className="footer-sub">
             Dear Tomorrow · Letters preserved in memory and delivered across time.

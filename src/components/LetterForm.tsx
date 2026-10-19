@@ -428,12 +428,12 @@ export const LetterForm: React.FC<LetterFormProps> = ({ onSuccess }) => {
       <div className="journal-header">
         <div className="journal-title-box">
           <h2>The Open Diary Sheet</h2>
-          <p>“Dip your pen in this moment, and speak to who you will become.”</p>
+          <p className="journal-script-subtitle font-script">“Dip your pen in this moment, and speak to who you will become…”</p>
         </div>
 
         <div className="postmark-badge" aria-hidden="true">
           <span>TIME POST</span>
-          <span>{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+          <span className="postmark-date-script font-script">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
         </div>
       </div>
 
@@ -446,7 +446,7 @@ export const LetterForm: React.FC<LetterFormProps> = ({ onSuccess }) => {
             <label htmlFor={contentId} className="section-label">
               <span>Write Your Letter</span> 💌
             </label>
-            <span className="section-subtext">Label: “Dear Future Me…”</span>
+            <span className="section-subtext font-script">“Dear future me…”</span>
           </div>
 
           {/* Letter Title Field */}
@@ -541,7 +541,7 @@ export const LetterForm: React.FC<LetterFormProps> = ({ onSuccess }) => {
             <div className="section-label">
               <span>Choose Your Delivery Date</span> 🕰️
             </div>
-            <span className="section-subtext">“When should this letter find you?”</span>
+            <span className="section-subtext font-script">“When should this letter find you?”</span>
           </div>
 
           <p style={{ fontStyle: 'italic', color: 'var(--color-warm-chocolate)', margin: 0 }}>
@@ -554,7 +554,7 @@ export const LetterForm: React.FC<LetterFormProps> = ({ onSuccess }) => {
               type="button"
               className={`preset-date-btn ${activePreset === 'today' ? 'active' : ''}`}
               onClick={() => applyPreset('today')}
-              style={activePreset === 'today' ? { borderColor: '#8C2D19', fontWeight: 'bold' } : undefined}
+              style={activePreset === 'today' ? { borderColor: '#722F37', fontWeight: 'bold' } : undefined}
             >
               Today (Send Now ⚡)
             </button>
@@ -727,7 +727,7 @@ export const LetterForm: React.FC<LetterFormProps> = ({ onSuccess }) => {
             <label htmlFor={emailId} className="section-label">
               <span>Where Should We Send It?</span> 📮
             </label>
-            <span className="section-subtext">“Where should your letter arrive?”</span>
+            <span className="section-subtext font-script">“Where should your letter arrive?”</span>
           </div>
 
           <p style={{ fontStyle: 'italic', color: 'var(--color-warm-chocolate)', margin: 0 }}>

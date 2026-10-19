@@ -144,7 +144,7 @@ export const ConfirmationCard = ({
           <h2 className="confirmation-title">
             Your letter is safely tucked away! 💌
           </h2>
-          <p className="confirmation-message">
+          <p className="confirmation-message font-script-quote">
             “It's a little magical, isn't it? Your words are now waiting for the perfect moment to find their way to the future.”
           </p>
         </div>
@@ -192,7 +192,7 @@ export const ConfirmationCard = ({
               <Sparkles size={14} style={{ display: 'inline', marginRight: '6px' }} />
               Vault Status
             </span>
-            <span className="summary-val" style={{ fontSize: '1rem', color: '#6B4938' }}>
+            <span className="summary-val" style={{ fontSize: '1rem', color: '#634832' }}>
               #{letterData.id} • {letterStatus === 'delivered' ? '✨ Dispatched / Delivered' : '⏳ Guarded in Vault'}
             </span>
           </div>
@@ -210,7 +210,7 @@ export const ConfirmationCard = ({
         )}
 
         {sendNowError && (
-          <div style={{ width: '100%', maxWidth: '580px', padding: '14px 18px', background: '#FFF0EB', border: '1.5px solid #E4B5A5', borderRadius: '10px', color: '#7A2816', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ width: '100%', maxWidth: '580px', padding: '14px 18px', background: '#FFF0EB', border: '1.5px solid #E4B5A5', borderRadius: '10px', color: '#722F37', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
               <span style={{ fontSize: '1.2rem' }}>⚠️</span>
               <div>
@@ -222,7 +222,7 @@ export const ConfirmationCard = ({
               type="button"
               onClick={() => setIsConfigModalOpen(true)}
               className="inspiration-btn"
-              style={{ alignSelf: 'flex-start', marginTop: '6px', fontSize: '0.9rem', padding: '6px 14px', background: '#8C2D19', color: '#F5EBDD', borderColor: '#8C2D19' }}
+              style={{ alignSelf: 'flex-start', marginTop: '6px', fontSize: '0.9rem', padding: '6px 14px', background: '#722F37', color: '#E2D0B8', borderColor: '#722F37' }}
             >
               <Settings size={14} style={{ display: 'inline', marginRight: '6px' }} />
               Open Email Settings to configure Google App Password
@@ -275,7 +275,7 @@ export const ConfirmationCard = ({
               type="button"
               onClick={() => setIsConfigModalOpen(true)}
               className="inspiration-btn"
-              style={{ padding: '8px 18px', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(140, 45, 25, 0.12)', borderColor: '#8C2D19', color: '#8C2D19' }}
+              style={{ padding: '8px 18px', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(114, 47, 55, 0.12)', borderColor: '#722F37', color: '#722F37' }}
             >
               <Settings size={15} />
               <span>Configure Gmail Credentials ⚙️</span>
@@ -285,8 +285,8 @@ export const ConfirmationCard = ({
 
         {/* Ethereal Preview Button if Sandbox */}
         {previewUrl && (
-          <div style={{ width: '100%', maxWidth: '580px', padding: '14px 18px', background: 'rgba(232, 197, 129, 0.25)', border: '1.5px dashed #B58B62', borderRadius: '10px', textAlign: 'center' }}>
-            <p style={{ margin: '0 0 8px 0', fontSize: '0.95rem', color: '#4A3026' }}>
+          <div style={{ width: '100%', maxWidth: '580px', padding: '14px 18px', background: '#E2D0B8', border: '1.5px dashed #A88968', borderRadius: '10px', textAlign: 'center' }}>
+            <p style={{ margin: '0 0 8px 0', fontSize: '0.95rem', color: '#382016' }}>
               📬 <strong>Test Sandbox Delivery:</strong> Since live Gmail/Resend keys aren't set in <code>.env</code> yet, this letter was dispatched to your sandbox preview:
             </p>
             <a
