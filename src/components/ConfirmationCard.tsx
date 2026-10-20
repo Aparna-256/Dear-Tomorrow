@@ -7,6 +7,8 @@ export interface ConfirmedLetterData {
   title: string;
   deliverAt: string;
   recipientEmail: string;
+  viewToken?: string;
+  viewUrl?: string;
 }
 
 interface ConfirmationCardProps {
@@ -22,6 +24,8 @@ export const ConfirmationCard = ({
   const [testLoading, setTestLoading] = useState(false);
   const [testMessage, setTestMessage] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [letterViewUrl, setLetterViewUrl] = useState<string | null>(letterData.viewUrl || null);
+  const [copiedLink, setCopiedLink] = useState(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [letterStatus, setLetterStatus] = useState<string>('pending');
   const [isSendingNow, setIsSendingNow] = useState(false);
@@ -46,6 +50,9 @@ export const ConfirmationCard = ({
   const diffMs = deliveryDateObj.getTime() - now.getTime();
   const diffDays = Math.max(0, Math.round(diffMs / (1000 * 60 * 60 * 24)));
 
+  // Fallback view URL if not directly in props
+  const resolvedViewUrl = letterViewUrl || (letterData.viewToken ? `/letter/${letterData.viewToken}` : `/letter/${letterData.id}`);
+
   // Query letter status and preview link from backend
   useEffect(() => {
     let isMounted = true;
@@ -59,6 +66,9 @@ export const ConfirmationCard = ({
             if (data.previewUrl) {
               setPreviewUrl(data.previewUrl);
             }
+            if (data.viewUrl) {
+              setLetterViewUrl(data.viewUrl);
+            }
           }
         }
       } catch {}
@@ -71,6 +81,19 @@ export const ConfirmationCard = ({
       clearInterval(interval);
     };
   }, [letterData.id]);
+
+  const handleCopyLink = async () => {
+    try {
+      const fullUrl = resolvedViewUrl.startsWith('http')
+        ? resolvedViewUrl
+        : `${window.location.origin}${resolvedViewUrl}`;
+      await navigator.clipboard.writeText(fullUrl);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 3000);
+    } catch {
+      // Fallback
+    }
+  };
 
   const handleSendLetterNow = async () => {
     try {
@@ -88,6 +111,9 @@ export const ConfirmationCard = ({
         setSendNowSuccess(`Letter successfully sent to ${letterData.recipientEmail}! Check your Gmail.`);
         if (data.previewUrl) {
           setPreviewUrl(data.previewUrl);
+        }
+        if (data.viewUrl) {
+          setLetterViewUrl(data.viewUrl);
         }
       } else {
         setSendNowError(data.error || 'Failed to dispatch letter to recipient email.');
@@ -195,6 +221,64 @@ export const ConfirmationCard = ({
             <span className="summary-val" style={{ fontSize: '1rem', color: '#634832' }}>
               #{letterData.id} • {letterStatus === 'delivered' ? '✨ Dispatched / Delivered' : '⏳ Guarded in Vault'}
             </span>
+          </div>
+        </div>
+
+        {/* Dedicated Diary Page Link Card */}
+        <div style={{
+          width: '100%',
+          maxWidth: '580px',
+          padding: '20px',
+          background: 'rgba(250, 245, 238, 0.95)',
+          border: '2px solid #722F37',
+          borderRadius: '12px',
+          boxShadow: '0 4px 15px rgba(56, 32, 22, 0.12)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+          textAlign: 'center'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '1.2rem' }}>📖</span>
+            <strong style={{ fontSize: '1.1rem', color: '#2B1B15', fontFamily: 'var(--font-heading)' }}>
+              Dedicated Vintage Diary Page
+            </strong>
+          </div>
+          <p style={{ margin: 0, fontSize: '0.92rem', color: '#634832', lineHeight: '1.5' }}>
+            A unique link to this letter's dedicated vintage diary is included at the top of the recipient's email. You can also view or copy it below:
+          </p>
+          <div style={{
+            display: 'flex',
+            gap: '10px',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            alignItems: 'center',
+            marginTop: '4px'
+          }}>
+            <a
+              href={resolvedViewUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-hero-write"
+              style={{ padding: '10px 22px', fontSize: '0.95rem', textDecoration: 'none' }}
+            >
+              <span>Open Dedicated Diary Page ➔</span>
+            </a>
+            <button
+              type="button"
+              onClick={handleCopyLink}
+              className="inspiration-btn"
+              style={{
+                padding: '10px 20px',
+                fontSize: '0.95rem',
+                borderColor: '#722F37',
+                color: '#722F37',
+                fontWeight: 600,
+                background: copiedLink ? '#EEF8EC' : undefined
+              }}
+            >
+              {copiedLink ? '✓ Copied to Clipboard!' : '📋 Copy Diary Link'}
+            </button>
           </div>
         </div>
 

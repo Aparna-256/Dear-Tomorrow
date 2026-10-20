@@ -1250,3 +1250,886 @@ body {
   letter-spacing: 0.5px;
 }
 
+/* ==========================================================================
+   Dedicated Vintage Diary Letter Page Styles
+   ========================================================================== */
+
+.diary-viewport {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: background-color 0.5s ease;
+}
+
+.diary-viewport.candlelight-active {
+  box-shadow: inset 0 0 120px rgba(255, 170, 60, 0.18);
+  background-color: #24140D;
+}
+
+/* Top Navigation Bar */
+.diary-nav-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 28px;
+  background: rgba(43, 27, 21, 0.85);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(168, 137, 104, 0.25);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.diary-nav-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.diary-brand-sub {
+  font-size: 1.3rem;
+  color: var(--color-gold-dust);
+  opacity: 0.85;
+}
+
+.diary-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.diary-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: rgba(226, 208, 184, 0.12);
+  border: 1px solid rgba(168, 137, 104, 0.45);
+  color: var(--color-aged-cream);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition-gentle);
+}
+
+.diary-action-btn:hover {
+  background: rgba(226, 208, 184, 0.24);
+  border-color: var(--color-gold-dust);
+  color: #FFFDF9;
+  transform: translateY(-1px);
+}
+
+.diary-action-btn.active {
+  background: rgba(114, 47, 55, 0.4);
+  border-color: var(--color-accent-burgundy);
+  color: #FFF5E6;
+}
+
+/* Diary Book Folio Wrapper */
+.diary-book-wrapper {
+  flex: 1;
+  max-width: 860px;
+  width: 100%;
+  margin: 36px auto;
+  padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* The Antique Parchment Folio Sheet */
+.vintage-diary-folio {
+  position: relative;
+  background: #F8EFE2;
+  background-image: 
+    radial-gradient(circle at 10% 15%, rgba(168, 137, 104, 0.12) 0%, transparent 50%),
+    radial-gradient(circle at 90% 85%, rgba(114, 47, 55, 0.06) 0%, transparent 40%),
+    linear-gradient(180deg, #FAF4EA 0%, #F5EBDD 50%, #EFE1CF 100%);
+  border: 2px solid var(--color-border-line);
+  border-radius: 14px;
+  padding: 56px 52px;
+  box-shadow: 
+    0 16px 40px rgba(25, 14, 10, 0.45),
+    0 2px 10px rgba(25, 14, 10, 0.2),
+    inset 0 0 60px rgba(99, 72, 50, 0.12),
+    inset 0 0 2px rgba(43, 27, 21, 0.25);
+  overflow: hidden;
+}
+
+/* Silk Bookmark Ribbon */
+.silk-bookmark-ribbon {
+  position: absolute;
+  top: 0;
+  right: 56px;
+  width: 26px;
+  height: 90px;
+  background: linear-gradient(90deg, #562127 0%, #722F37 50%, #8C2D19 100%);
+  box-shadow: 2px 4px 10px rgba(0, 0, 0, 0.28);
+  z-index: 10;
+}
+
+.silk-bookmark-ribbon .ribbon-tail {
+  position: absolute;
+  bottom: -13px;
+  left: 0;
+  width: 0;
+  height: 0;
+  border-left: 13px solid #722F37;
+  border-right: 13px solid #722F37;
+  border-bottom: 13px solid transparent;
+}
+
+/* Folio Header & Postmark */
+.diary-folio-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  padding-bottom: 24px;
+  border-bottom: 1.5px dashed var(--color-border-line);
+  margin-bottom: 36px;
+  flex-wrap: wrap;
+}
+
+.postmark-dual-stamp {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.postmark-circle {
+  width: 92px;
+  height: 92px;
+  border: 2px dashed var(--color-accent-burgundy);
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 6px;
+  color: var(--color-accent-burgundy);
+  transform: rotate(-7deg);
+  background: rgba(226, 208, 184, 0.3);
+  box-shadow: 0 2px 8px rgba(114, 47, 55, 0.1);
+}
+
+.postmark-city {
+  font-family: var(--font-heading);
+  font-size: 0.68rem;
+  letter-spacing: 2px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.postmark-star {
+  font-size: 0.55rem;
+  letter-spacing: 2px;
+  margin: 1px 0;
+}
+
+.postmark-date-text {
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.postmark-status {
+  font-size: 0.55rem;
+  letter-spacing: 1.5px;
+  font-weight: bold;
+  margin-top: 2px;
+  color: var(--color-secondary-text);
+}
+
+.postmark-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.postmark-bars .bar {
+  display: block;
+  width: 44px;
+  height: 2px;
+  background-color: var(--color-accent-burgundy);
+  opacity: 0.65;
+}
+
+.archive-badge-card {
+  padding: 10px 18px;
+  border-radius: 8px;
+  background: rgba(226, 208, 184, 0.45);
+  border: 1px solid var(--color-border-line);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-end;
+}
+
+.archive-badge-header {
+  font-size: 0.78rem;
+  letter-spacing: 1.5px;
+  font-weight: 700;
+  color: var(--color-accent-burgundy);
+  text-transform: uppercase;
+}
+
+.archive-timespan {
+  font-size: 0.85rem;
+  color: var(--color-secondary-text);
+  font-style: italic;
+}
+
+/* Letter Title Section */
+.diary-letter-title-section {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.letter-filigree-ornament {
+  font-size: 15px;
+  letter-spacing: 6px;
+  color: var(--color-border-line);
+  margin-bottom: 12px;
+}
+
+.diary-letter-title {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4vw, 2.85rem);
+  color: var(--color-primary-text);
+  line-height: 1.25;
+  font-weight: 700;
+  font-style: italic;
+  margin-bottom: 16px;
+  letter-spacing: -0.5px;
+}
+
+.diary-meta-penned {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 1.05rem;
+  color: var(--color-secondary-text);
+}
+
+.diary-meta-penned .penned-by {
+  font-size: 1.4rem;
+  color: var(--color-accent-burgundy);
+}
+
+.diary-meta-penned .addressed-to {
+  font-size: 1rem;
+}
+
+/* Decorative Divider */
+.vintage-ruler-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 32px 0 40px 0;
+  position: relative;
+}
+
+.vintage-ruler-divider::before,
+.vintage-ruler-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-border-line), transparent);
+}
+
+.ruler-gem {
+  padding: 0 14px;
+  color: var(--color-accent-burgundy);
+  font-size: 1.1rem;
+}
+
+/* Letter Content Body */
+.diary-letter-body {
+  font-family: var(--font-body);
+  font-size: clamp(1.22rem, 2vw, 1.38rem);
+  line-height: 2.1;
+  color: var(--color-primary-text);
+  margin-bottom: 48px;
+}
+
+.diary-paragraph {
+  margin-bottom: 26px;
+  text-align: justify;
+  text-justify: inter-word;
+  word-break: break-word;
+  letter-spacing: 0.15px;
+}
+
+/* First paragraph drop cap */
+.diary-paragraph.first-paragraph::first-letter {
+  float: left;
+  font-family: 'Cinzel Decorative', var(--font-heading);
+  font-size: 3.6rem;
+  line-height: 0.8;
+  padding: 6px 12px 2px 0;
+  color: var(--color-accent-burgundy);
+  font-weight: 700;
+}
+
+/* Diary Folio Footer */
+.diary-folio-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 24px;
+  padding-top: 36px;
+  border-top: 1.5px dashed var(--color-border-line);
+  flex-wrap: wrap;
+}
+
+.diary-sign-off {
+  max-width: 420px;
+}
+
+.sign-off-quote {
+  font-size: clamp(1.4rem, 2.5vw, 1.8rem);
+  color: var(--color-secondary-text);
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.sign-off-author {
+  font-size: 1.6rem;
+  color: var(--color-primary-text);
+  margin: 0;
+}
+
+.wax-seal-ceremony {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.seal-caption {
+  font-size: 1.05rem;
+  color: var(--color-secondary-text);
+  text-align: center;
+  max-width: 220px;
+}
+
+/* Action Banner at Bottom */
+.diary-cta-banner {
+  background: rgba(43, 27, 21, 0.75);
+  border: 1.5px solid var(--color-border-line);
+  border-radius: 12px;
+  padding: 24px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(6px);
+}
+
+.diary-cta-banner .cta-icon-wrap {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: rgba(114, 47, 55, 0.4);
+  border: 1px solid var(--color-accent-burgundy);
+  color: #FFF5E6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.diary-cta-banner .cta-text-wrap h3 {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  color: #FFF5E6;
+  margin-bottom: 4px;
+}
+
+.diary-cta-banner .cta-text-wrap p {
+  font-size: 0.95rem;
+  color: var(--color-aged-cream);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Responsive Adjustments for Mobile */
+@media (max-width: 768px) {
+  .vintage-diary-folio {
+    padding: 36px 22px;
+    border-radius: 10px;
+  }
+
+  .silk-bookmark-ribbon {
+    right: 24px;
+    width: 20px;
+    height: 70px;
+  }
+
+  .silk-bookmark-ribbon .ribbon-tail {
+    border-left-width: 10px;
+    border-right-width: 10px;
+    border-bottom-width: 10px;
+    bottom: -10px;
+  }
+
+  .diary-folio-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .archive-badge-card {
+    align-items: flex-start;
+  }
+
+  .diary-letter-body {
+    font-size: 1.15rem;
+    line-height: 1.95;
+    text-align: left;
+  }
+
+  .diary-folio-footer {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .diary-cta-banner {
+    flex-direction: column;
+    text-align: center;
+    padding: 20px 18px;
+  }
+
+  .hide-on-mobile {
+    display: none !important;
+  }
+}
+
+/* ==========================================================================
+   Minimal Vintage Background Music Player Pill
+   ========================================================================== */
+
+.vintage-music-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(43, 27, 21, 0.92);
+  border: 1px solid rgba(194, 163, 126, 0.45);
+  border-radius: 26px;
+  padding: 5px 14px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(8px);
+  color: var(--color-aged-cream);
+  font-family: var(--font-sans);
+  transition: var(--transition-gentle);
+}
+
+.vintage-music-pill:hover {
+  border-color: var(--color-gold-dust);
+  box-shadow: 0 4px 18px rgba(114, 47, 55, 0.25);
+}
+
+.music-pill-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.music-note-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(114, 47, 55, 0.35);
+  border: 1px solid rgba(194, 163, 126, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-gold-bright);
+  transition: transform 0.4s ease;
+}
+
+.music-note-icon.playing {
+  animation: musicIconPulse 2.4s ease-in-out infinite;
+  color: #FFE6AA;
+  border-color: #D8B78E;
+}
+
+@keyframes musicIconPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(216, 183, 142, 0);
+  }
+  50% {
+    transform: scale(1.08);
+    box-shadow: 0 0 10px rgba(216, 183, 142, 0.4);
+  }
+}
+
+.music-pill-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.music-track-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #FFFDF9;
+  letter-spacing: 0.3px;
+}
+
+.music-track-time {
+  font-size: 0.68rem;
+  color: var(--color-gold-dust);
+  font-family: monospace;
+}
+
+/* Vintage Equalizer Wave */
+.vintage-equalizer {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 14px;
+  padding: 0 2px;
+}
+
+.eq-bar {
+  display: block;
+  width: 2.5px;
+  height: 4px;
+  background: var(--color-gold-dust);
+  border-radius: 2px;
+  transition: height 0.2s ease;
+}
+
+.vintage-equalizer.active .bar-1 {
+  animation: eqBounce 0.9s ease-in-out infinite alternate;
+}
+
+.vintage-equalizer.active .bar-2 {
+  animation: eqBounce 0.7s ease-in-out 0.2s infinite alternate;
+}
+
+.vintage-equalizer.active .bar-3 {
+  animation: eqBounce 1.1s ease-in-out 0.4s infinite alternate;
+}
+
+@keyframes eqBounce {
+  0% { height: 3px; background: var(--color-gold-dust); }
+  50% { height: 14px; background: var(--color-gold-bright); }
+  100% { height: 6px; background: var(--color-accent-burgundy); }
+}
+
+.music-pill-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-left: 1px solid rgba(168, 137, 104, 0.3);
+  padding-left: 8px;
+}
+
+.music-ctrl-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(226, 208, 184, 0.12);
+  border: 1px solid rgba(168, 137, 104, 0.4);
+  color: var(--color-aged-cream);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition-gentle);
+}
+
+.music-ctrl-btn:hover {
+  background: rgba(114, 47, 55, 0.5);
+  border-color: var(--color-gold-dust);
+  color: #FFFDF9;
+  transform: scale(1.08);
+}
+
+/* ==========================================================================
+   Open Your Letter 💌 Ceremonial Unsealing Invitation Modal
+   ========================================================================== */
+
+.unseal-invitation-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(27, 15, 10, 0.88);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: overlayFadeIn 0.5s ease-out forwards;
+}
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.unseal-envelope-card {
+  position: relative;
+  max-width: 520px;
+  width: 100%;
+  background: #FAF3E8;
+  background-image: 
+    radial-gradient(circle at 15% 20%, rgba(168, 137, 104, 0.15) 0%, transparent 60%),
+    linear-gradient(180deg, #FFFDF8 0%, #F5EBDD 100%);
+  border: 2px solid var(--color-border-line);
+  border-radius: 16px;
+  padding: 44px 36px 36px 36px;
+  text-align: center;
+  box-shadow: 
+    0 24px 60px rgba(0, 0, 0, 0.65),
+    0 2px 10px rgba(0, 0, 0, 0.3),
+    inset 0 0 50px rgba(99, 72, 50, 0.1);
+  overflow: hidden;
+  animation: cardScaleUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes cardScaleUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.envelope-air-mail-stripe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background: repeating-linear-gradient(
+    135deg,
+    #722F37 0px,
+    #722F37 15px,
+    #FAF3E8 15px,
+    #FAF3E8 25px,
+    #382016 25px,
+    #382016 40px,
+    #FAF3E8 40px,
+    #FAF3E8 50px
+  );
+}
+
+.envelope-seal-badge {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+
+.giant-wax-seal.pulse-glow {
+  box-shadow: 
+    0 4px 14px rgba(114, 47, 55, 0.4),
+    0 0 24px rgba(216, 183, 142, 0.35);
+  animation: waxPulseGlow 3s ease-in-out infinite;
+}
+
+@keyframes waxPulseGlow {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 4px 14px rgba(114, 47, 55, 0.4), 0 0 20px rgba(216, 183, 142, 0.25);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(114, 47, 55, 0.5), 0 0 32px rgba(216, 183, 142, 0.55);
+  }
+}
+
+.envelope-header-text {
+  margin-bottom: 16px;
+}
+
+.vintage-post-stamp-sub {
+  display: block;
+  font-size: 1.25rem;
+  color: var(--color-accent-burgundy);
+  margin-bottom: 6px;
+}
+
+.unseal-card-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 3.5vw, 2rem);
+  color: var(--color-primary-text);
+  line-height: 1.3;
+  margin-bottom: 8px;
+}
+
+.unseal-card-excerpt {
+  font-size: 0.95rem;
+  color: var(--color-secondary-text);
+  line-height: 1.5;
+}
+
+.unseal-romantic-note {
+  font-size: 1.35rem;
+  color: var(--color-warm-chocolate);
+  margin: 18px 0 26px 0;
+  line-height: 1.45;
+}
+
+.btn-open-letter-ceremony {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: linear-gradient(135deg, #8C2D19 0%, #722F37 50%, #562127 100%);
+  color: #FFFDF9;
+  border: 2px solid var(--color-gold-dust);
+  border-radius: 34px;
+  padding: 16px 36px;
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  box-shadow: 
+    0 8px 24px rgba(114, 47, 55, 0.45),
+    inset 0 1px 1px rgba(255, 255, 255, 0.35);
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  width: 100%;
+  max-width: 380px;
+  margin: 0 auto;
+}
+
+.btn-open-letter-ceremony:hover {
+  transform: translateY(-2px) scale(1.02);
+  border-color: #FFE6AA;
+  box-shadow: 
+    0 12px 30px rgba(114, 47, 55, 0.6),
+    0 0 20px rgba(216, 183, 142, 0.4);
+}
+
+.btn-open-letter-ceremony:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+.unseal-footnote {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--color-secondary-text);
+  margin-top: 14px;
+  opacity: 0.85;
+  font-style: italic;
+}
+
+/* Smooth unfold animation for the letter folio */
+.vintage-diary-folio.unsealed-appear {
+  animation: letterUnfold 1.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes letterUnfold {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Staggered entrance for letter sections */
+.vintage-diary-folio.unsealed-appear .diary-letter-title-section {
+  animation: sectionRise 0.8s ease-out 0.2s both;
+}
+
+.vintage-diary-folio.unsealed-appear .diary-letter-body {
+  animation: sectionRise 0.9s ease-out 0.4s both;
+}
+
+.vintage-diary-folio.unsealed-appear .diary-folio-footer {
+  animation: sectionRise 0.9s ease-out 0.6s both;
+}
+
+@keyframes sectionRise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive adjustments for music bar on smaller screens */
+@media (max-width: 768px) {
+  .vintage-music-pill {
+    padding: 4px 10px;
+    gap: 8px;
+  }
+
+  .music-track-title {
+    font-size: 0.7rem;
+  }
+
+  .music-track-time {
+    font-size: 0.62rem;
+  }
+
+  .music-ctrl-btn {
+    width: 24px;
+    height: 24px;
+  }
+
+  .unseal-envelope-card {
+    padding: 36px 20px 28px 20px;
+  }
+}
+
+/* Print Keepsake Styles */
+@media print {
+  body {
+    background: #FFFFFF !important;
+    color: #1A1A1A !important;
+  }
+
+  .no-print,
+  .celestial-dust,
+  .diary-nav-bar,
+  .diary-cta-banner,
+  .vintage-footer {
+    display: none !important;
+  }
+
+  .diary-book-wrapper {
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .vintage-diary-folio {
+    border: 1px solid #777 !important;
+    box-shadow: none !important;
+    background: #FFFFFF !important;
+    padding: 24px !important;
+  }
+
+  .diary-letter-body {
+    color: #000000 !important;
+    font-size: 12pt !important;
+    line-height: 1.8 !important;
+  }
+}
+
+

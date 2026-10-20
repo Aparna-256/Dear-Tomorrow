@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CelestialDust } from './components/CelestialDust';
 import { VintageMailboxIllustration } from './components/VintageMailboxIllustration';
 import { LetterForm } from './components/LetterForm';
@@ -6,10 +6,40 @@ import { ConfirmationCard } from './components/ConfirmationCard';
 import type { ConfirmedLetterData } from './components/ConfirmationCard';
 import { PrivacyNotice } from './components/PrivacyNotice';
 import { EmailConfigModal } from './components/EmailConfigModal';
+import { LetterDiaryPage } from './components/LetterDiaryPage';
+
+function getRouteState(): { isLetterView: boolean; token: string | null } {
+  const pathname = window.location.pathname;
+  if (pathname.startsWith('/letter/')) {
+    const token = pathname.replace(/^\/letter\/?/, '').split('/')[0];
+    if (token) return { isLetterView: true, token };
+  }
+  const searchParams = new URLSearchParams(window.location.search);
+  const letterParam = searchParams.get('letter');
+  if (letterParam) {
+    return { isLetterView: true, token: letterParam };
+  }
+  return { isLetterView: false, token: null };
+}
 
 export function App() {
+  const [route, setRoute] = useState(getRouteState);
   const [confirmedLetter, setConfirmedLetter] = useState<ConfirmedLetterData | null>(null);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+
+  useEffect(() => {
+    const onPopState = () => {
+      setRoute(getRouteState());
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  const handleNavigateHome = () => {
+    window.history.pushState({}, '', '/');
+    setRoute({ isLetterView: false, token: null });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const handleLetterSuccess = (data: ConfirmedLetterData) => {
     setConfirmedLetter(data);
@@ -37,6 +67,16 @@ export function App() {
       element.scrollIntoView({ behavior: 'smooth' });
     }
   };
+
+  // Dedicated Letter Page Route: /letter/:token
+  if (route.isLetterView && route.token) {
+    return (
+      <>
+        <CelestialDust />
+        <LetterDiaryPage token={route.token} onNavigateHome={handleNavigateHome} />
+      </>
+    );
+  }
 
   return (
     <>

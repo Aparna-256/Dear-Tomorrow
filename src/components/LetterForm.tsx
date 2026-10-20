@@ -19,6 +19,7 @@ const DRAFT_STORAGE_KEY = 'dear_tomorrow_draft_v1';
 export const LetterForm: React.FC<LetterFormProps> = ({ onSuccess }) => {
   // Title & Content
   const [title, setTitle] = useState('');
+  const [senderName, setSenderName] = useState('');
   const [content, setContent] = useState('');
   const [recipientType, setRecipientType] = useState<'self' | 'someone'>('self');
   const [recipientName, setRecipientName] = useState('');
@@ -50,6 +51,7 @@ export const LetterForm: React.FC<LetterFormProps> = ({ onSuccess }) => {
 
   // Accessible IDs
   const titleId = useId();
+  const senderNameId = useId();
   const contentId = useId();
   const emailId = useId();
   const recipientNameId = useId();
@@ -62,6 +64,7 @@ export const LetterForm: React.FC<LetterFormProps> = ({ onSuccess }) => {
         const parsed = JSON.parse(saved);
         if (parsed.content) setContent(parsed.content);
         if (parsed.title) setTitle(parsed.title);
+        if (parsed.senderName) setSenderName(parsed.senderName);
         if (parsed.recipientEmail) setRecipientEmail(parsed.recipientEmail);
         if (parsed.recipientName) setRecipientName(parsed.recipientName);
         if (parsed.recipientType) setRecipientType(parsed.recipientType);
@@ -74,7 +77,7 @@ export const LetterForm: React.FC<LetterFormProps> = ({ onSuccess }) => {
 
   // Auto-save draft on changes (debounced)
   useEffect(() => {
-    if (!content && !title) return;
+    if (!content && !title && !senderName) return;
 
     const timer = setTimeout(() => {
       try {
@@ -82,6 +85,7 @@ export const LetterForm: React.FC<LetterFormProps> = ({ onSuccess }) => {
           DRAFT_STORAGE_KEY,
           JSON.stringify({
             title,
+            senderName,
             content,
             recipientEmail,
             recipientName,
@@ -97,12 +101,13 @@ export const LetterForm: React.FC<LetterFormProps> = ({ onSuccess }) => {
     }, 800);
 
     return () => clearTimeout(timer);
-  }, [title, content, recipientEmail, recipientName, recipientType]);
+  }, [title, senderName, content, recipientEmail, recipientName, recipientType]);
 
   const handleClearDraft = () => {
     if (window.confirm('Would you like to clear your current draft and begin on a fresh parchment?')) {
       setContent('');
       setTitle('');
+      setSenderName('');
       localStorage.removeItem(DRAFT_STORAGE_KEY);
       setDraftSavedTime(null);
     }
@@ -377,6 +382,7 @@ export const LetterForm: React.FC<LetterFormProps> = ({ onSuccess }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: title.trim() || 'Dear Future Me',
+          senderName: senderName.trim() || null,
           letterContent: content.trim(),
           deliverAt: targetDate.toISOString(),
           recipientEmail: recipientEmail.trim(),
@@ -408,6 +414,8 @@ export const LetterForm: React.FC<LetterFormProps> = ({ onSuccess }) => {
         title: data.title,
         deliverAt: data.deliverAt,
         recipientEmail: data.recipientEmail,
+        viewToken: data.viewToken,
+        viewUrl: data.viewUrl,
       });
     } catch (err: any) {
       setValidationError(err.message || 'An unexpected error occurred while sealing your letter.');
@@ -449,23 +457,44 @@ export const LetterForm: React.FC<LetterFormProps> = ({ onSuccess }) => {
             <span className="section-subtext font-script">“Dear future me…”</span>
           </div>
 
-          {/* Letter Title Field */}
-          <div className="vintage-input-wrap">
-            <label htmlFor={titleId} className="input-label-sm">
-              Letter Title or Subject (Optional)
-            </label>
-            <input
-              id={titleId}
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. A reflection on where I stand today, or What I hope you haven't forgotten..."
-              className="vintage-input"
-              maxLength={120}
-              spellCheck={false}
-              autoCorrect="off"
-              autoCapitalize="off"
-            />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '14px' }}>
+            {/* Letter Title Field */}
+            <div className="vintage-input-wrap">
+              <label htmlFor={titleId} className="input-label-sm">
+                Letter Title or Subject (Optional)
+              </label>
+              <input
+                id={titleId}
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g. A reflection on where I stand today..."
+                className="vintage-input"
+                maxLength={120}
+                spellCheck={false}
+                autoCorrect="off"
+                autoCapitalize="off"
+              />
+            </div>
+
+            {/* Sender Name / Penned By Field */}
+            <div className="vintage-input-wrap">
+              <label htmlFor={senderNameId} className="input-label-sm">
+                Your Name / Penned By (Optional)
+              </label>
+              <input
+                id={senderNameId}
+                type="text"
+                value={senderName}
+                onChange={(e) => setSenderName(e.target.value)}
+                placeholder="e.g. Your name (or blank for 'Your Past Self')"
+                className="vintage-input"
+                maxLength={80}
+                spellCheck={false}
+                autoCorrect="off"
+                autoCapitalize="off"
+              />
+            </div>
           </div>
 
           {/* Inspiration Chips */}

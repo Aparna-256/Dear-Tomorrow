@@ -24,6 +24,8 @@ export async function initDatabase() {
       id TEXT PRIMARY KEY,
       recipient_email TEXT NOT NULL,
       recipient_name TEXT,
+      sender_name TEXT,
+      view_token TEXT UNIQUE,
       title TEXT NOT NULL,
       content TEXT NOT NULL,
       deliver_at TEXT NOT NULL,
@@ -36,10 +38,44 @@ export async function initDatabase() {
     )
   `);
 
+  // Migrate existing tables if columns are missing
+  try {
+    const tableInfo = await db.execute(`PRAGMA table_info(letters)`);
+    const columnNames = tableInfo.rows.map((r: any) => r.name);
+
+    if (!columnNames.includes('sender_name')) {
+      await db.execute(`ALTER TABLE letters ADD COLUMN sender_name TEXT`);
+      console.log(`[Database] Added sender_name column to letters table`);
+    }
+
+    if (!columnNames.includes('view_token')) {
+      await db.execute(`ALTER TABLE letters ADD COLUMN view_token TEXT`);
+      console.log(`[Database] Added view_token column to letters table`);
+    }
+
+    // Ensure all existing rows without a view_token get assigned one
+    const rowsWithoutToken = await db.execute(`SELECT id FROM letters WHERE view_token IS NULL OR view_token = ''`);
+    for (const row of rowsWithoutToken.rows) {
+      const fallbackToken = `token_${(row.id as string).replace(/[^a-zA-Z0-9]/g, '')}_${Math.random().toString(36).slice(2, 10)}`;
+      await db.execute({
+        sql: `UPDATE letters SET view_token = ? WHERE id = ?`,
+        args: [fallbackToken, row.id],
+      });
+    }
+  } catch (migErr) {
+    console.warn(`[Database] Migration check notice:`, migErr);
+  }
+
   // Index for scheduler query speed
   await db.execute(`
     CREATE INDEX IF NOT EXISTS idx_letters_due 
     ON letters (status, deliver_at)
+  `);
+
+  // Index for unique view token lookups
+  await db.execute(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_letters_view_token 
+    ON letters (view_token)
   `);
 
   // Delivery audit logs

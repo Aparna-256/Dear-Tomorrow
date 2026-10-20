@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { db, initDatabase } from './db.js';
-import { sendLetterEmail } from './email.js';
+import { getLetterViewUrl, sendLetterEmail } from './email.js';
 import { checkAndDispatchDueLetters, startScheduler } from './scheduler.js';
 
 dotenv.config();
@@ -69,6 +69,7 @@ app.post('/api/letters', rateLimiter, async (req: Request, res: Response) => {
     const {
       recipientEmail,
       recipientName,
+      senderName,
       title,
       letterContent,
       deliverAt,
@@ -110,21 +111,28 @@ app.post('/api/letters', rateLimiter, async (req: Request, res: Response) => {
 
     const finalTitle = title && title.trim().length > 0 ? title.trim() : 'Dear Future Me';
     const letterId = `dt_${crypto.randomBytes(6).toString('hex')}`;
+    const viewToken = `dtv_${crypto.randomBytes(16).toString('hex')}`;
     const createdAt = now.toISOString();
     const deliverAtIso = parsedDate.toISOString();
+
+    const rawSender = senderName && typeof senderName === 'string' && senderName.trim().length > 0
+      ? senderName.trim()
+      : null;
 
     // Persist to SQLite
     await db.execute({
       sql: `
         INSERT INTO letters (
-          id, recipient_email, recipient_name, title, content, 
+          id, recipient_email, recipient_name, sender_name, view_token, title, content, 
           deliver_at, timezone, status, created_at, attempts
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, 0)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, 0)
       `,
       args: [
         letterId,
         recipientEmail.trim().toLowerCase(),
         recipientName ? String(recipientName).trim() : null,
+        rawSender,
+        viewToken,
         finalTitle,
         letterContent.trim(),
         deliverAtIso,
@@ -133,7 +141,11 @@ app.post('/api/letters', rateLimiter, async (req: Request, res: Response) => {
       ],
     });
 
-    console.log(`[API] Letter #${letterId} scheduled for ${deliverAtIso} (to: ${recipientEmail.trim()})`);
+    const hostOrigin = (req.headers.origin as string) || (req.headers.referer ? new URL(req.headers.referer).origin : undefined);
+    const appUrl = (process.env.APP_URL || hostOrigin || 'http://localhost:5173').replace(/\/+$/, '');
+    const viewUrl = `${appUrl}/letter/${viewToken}`;
+
+    console.log(`[API] Letter #${letterId} scheduled for ${deliverAtIso} (to: ${recipientEmail.trim()}, viewToken: ${viewToken})`);
 
     // If scheduled for practically now (e.g., within 60 seconds for immediate test), trigger scheduler check
     if (parsedDate.getTime() - now.getTime() <= 60000) {
@@ -145,6 +157,8 @@ app.post('/api/letters', rateLimiter, async (req: Request, res: Response) => {
     return res.status(201).json({
       success: true,
       id: letterId,
+      viewToken,
+      viewUrl,
       title: finalTitle,
       deliverAt: deliverAtIso,
       recipientEmail: recipientEmail.trim(),
@@ -164,7 +178,7 @@ app.post('/api/letters/:id/send-now', rateLimiter, async (req: Request, res: Res
   try {
     const { id } = req.params;
     const result = await db.execute({
-      sql: `SELECT id, recipient_email, recipient_name, title, content, deliver_at, timezone, created_at, status FROM letters WHERE id = ?`,
+      sql: `SELECT id, recipient_email, recipient_name, sender_name, view_token, title, content, deliver_at, timezone, created_at, status FROM letters WHERE id = ?`,
       args: [id],
     });
 
@@ -176,6 +190,8 @@ app.post('/api/letters/:id/send-now', rateLimiter, async (req: Request, res: Res
       id: string;
       recipient_email: string;
       recipient_name?: string | null;
+      sender_name?: string | null;
+      view_token?: string | null;
       title: string;
       content: string;
       deliver_at: string;
@@ -187,6 +203,7 @@ app.post('/api/letters/:id/send-now', rateLimiter, async (req: Request, res: Res
     console.log(`[API] Manual immediate dispatch triggered for letter #${letter.id} to ${letter.recipient_email}`);
 
     const sendResult = await sendLetterEmail(letter);
+    const viewUrl = getLetterViewUrl(letter);
 
     if (sendResult.success) {
       const deliveredAt = new Date().toISOString();
@@ -214,6 +231,7 @@ app.post('/api/letters/:id/send-now', rateLimiter, async (req: Request, res: Res
             provider: sendResult.provider,
             messageId: sendResult.messageId,
             previewUrl: sendResult.previewUrl,
+            viewUrl,
           }),
         ],
       });
@@ -223,6 +241,8 @@ app.post('/api/letters/:id/send-now', rateLimiter, async (req: Request, res: Res
         message: `Letter dispatched successfully to ${letter.recipient_email}!`,
         provider: sendResult.provider,
         previewUrl: sendResult.previewUrl,
+        viewUrl,
+        viewToken: letter.view_token || letter.id,
       });
     } else {
       const attemptedAt = new Date().toISOString();
@@ -261,7 +281,7 @@ app.get('/api/letters/:id/status', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const result = await db.execute({
-      sql: `SELECT id, title, deliver_at, status, created_at, delivered_at FROM letters WHERE id = ?`,
+      sql: `SELECT id, view_token, title, deliver_at, status, created_at, delivered_at FROM letters WHERE id = ?`,
       args: [id],
     });
 
@@ -287,8 +307,15 @@ app.get('/api/letters/:id/status', async (req: Request, res: Response) => {
       } catch {}
     }
 
+    const token = (row.view_token as string) || (row.id as string);
+    const hostOrigin = (req.headers.origin as string) || (req.headers.referer ? new URL(req.headers.referer).origin : undefined);
+    const appUrl = (process.env.APP_URL || hostOrigin || 'http://localhost:5173').replace(/\/+$/, '');
+    const viewUrl = `${appUrl}/letter/${token}`;
+
     res.json({
       id: row.id,
+      viewToken: token,
+      viewUrl,
       title: row.title,
       deliverAt: row.deliver_at,
       status: row.status,
@@ -300,6 +327,61 @@ app.get('/api/letters/:id/status', async (req: Request, res: Response) => {
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// Dedicated Public View API for Personalized Letter Page
+app.get('/api/letters/view/:token', async (req: Request, res: Response) => {
+  try {
+    const { token } = req.params;
+    if (!token || typeof token !== 'string') {
+      return res.status(400).json({ error: 'Letter token is required' });
+    }
+
+    const cleanToken = token.trim();
+    const result = await db.execute({
+      sql: `
+        SELECT id, recipient_email, recipient_name, sender_name, view_token, title, content, 
+               deliver_at, timezone, created_at, delivered_at, status 
+        FROM letters 
+        WHERE view_token = ? OR id = ?
+        LIMIT 1
+      `,
+      args: [cleanToken, cleanToken],
+    });
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        error: 'This letter has not yet surfaced from the currents of time.',
+      });
+    }
+
+    const row = result.rows[0];
+
+    // Mask email for privacy (e.g., r***@gmail.com)
+    const rawEmail = (row.recipient_email as string) || '';
+    const [userPart, domainPart] = rawEmail.split('@');
+    const maskedEmail = userPart && domainPart
+      ? `${userPart.slice(0, 1)}***@${domainPart}`
+      : 'confidential';
+
+    return res.json({
+      id: row.id,
+      viewToken: (row.view_token as string) || (row.id as string),
+      title: row.title,
+      content: row.content,
+      senderName: row.sender_name || null,
+      recipientName: row.recipient_name || null,
+      recipientEmailMasked: maskedEmail,
+      deliverAt: row.deliver_at,
+      createdAt: row.created_at,
+      deliveredAt: row.delivered_at,
+      status: row.status,
+      timezone: row.timezone,
+    });
+  } catch (err: any) {
+    console.error('[API] Error retrieving letter page:', err);
+    return res.status(500).json({ error: 'Could not open this letter from the archives.' });
   }
 });
 
@@ -349,21 +431,51 @@ app.post('/api/letters/send-test', rateLimiter, async (req: Request, res: Respon
       return res.status(400).json({ error: 'Recipient email required' });
     }
 
+    const testId = `test_${Date.now()}`;
+    const testToken = `test_dtv_${crypto.randomBytes(8).toString('hex')}`;
+    const nowIso = new Date().toISOString();
+
     const testLetter = {
-      id: `test_${Date.now()}`,
+      id: testId,
       recipient_email: recipientEmail.trim(),
+      recipient_name: 'Gentle Reader',
+      sender_name: 'The Time Postmaster 📮',
+      view_token: testToken,
       title: 'A Test Whispered Through the Stars ✧',
-      content: `Hello there!\n\nThis is a sample test dispatch from Dear Tomorrow to verify that your whimsical mailbox is connected and delivering letters with charm.\n\nMay your future hold gentle days and warm memories.`,
-      deliver_at: new Date().toISOString(),
+      content: `Hello there!\n\nThis is a sample test dispatch from Dear Tomorrow to verify that your whimsical mailbox is connected and delivering letters with charm.\n\nMay your future hold gentle days, quiet courage, and warm memories.\n\n— The Time Post Office`,
+      deliver_at: nowIso,
       timezone: 'UTC',
-      created_at: new Date().toISOString(),
+      created_at: nowIso,
     };
+
+    // Save test letter in database so clicking the email link opens the dedicated diary page
+    await db.execute({
+      sql: `
+        INSERT OR REPLACE INTO letters (
+          id, recipient_email, recipient_name, sender_name, view_token, title, content, 
+          deliver_at, timezone, status, created_at, attempts
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'delivered', ?, 1)
+      `,
+      args: [
+        testLetter.id,
+        testLetter.recipient_email,
+        testLetter.recipient_name,
+        testLetter.sender_name,
+        testLetter.view_token,
+        testLetter.title,
+        testLetter.content,
+        testLetter.deliver_at,
+        testLetter.timezone,
+        testLetter.created_at,
+      ],
+    });
 
     const result = await sendLetterEmail(testLetter);
     if (!result.success) {
       return res.status(500).json(result);
     }
-    res.json(result);
+    const viewUrl = getLetterViewUrl(testLetter);
+    res.json({ ...result, viewUrl, viewToken: testToken });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

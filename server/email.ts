@@ -5,6 +5,8 @@ export interface LetterRecord {
   id: string;
   recipient_email: string;
   recipient_name?: string | null;
+  sender_name?: string | null;
+  view_token?: string | null;
   title: string;
   content: string;
   deliver_at: string;
@@ -32,11 +34,19 @@ function escapeHtml(text: string): string {
     .replace(/'/g, '&#039;');
 }
 
+export function getLetterViewUrl(letter: LetterRecord): string {
+  const baseUrl = (process.env.APP_URL || process.env.BASE_URL || 'http://localhost:5173').replace(/\/+$/, '');
+  const token = letter.view_token || letter.id;
+  return `${baseUrl}/letter/${token}`;
+}
+
 export function generateLetterHtml(letter: LetterRecord): string {
   const safeTitle = escapeHtml(letter.title);
+  const viewUrl = getLetterViewUrl(letter);
+
   const formattedContent = escapeHtml(letter.content)
     .split('\n')
-    .map(line => line.trim() === '' ? '<br/>' : `<p style="margin: 0 0 14px 0; line-height: 1.8;">${line}</p>`)
+    .map(line => line.trim() === '' ? '<br/>' : `<p style="margin: 0 0 16px 0; line-height: 1.85; font-size: 16px; color: #3B251D;">${line}</p>`)
     .join('');
 
   const writtenDate = new Date(letter.created_at).toLocaleDateString('en-US', {
@@ -45,96 +55,153 @@ export function generateLetterHtml(letter: LetterRecord): string {
     year: 'numeric',
   });
 
+  const senderDisplay = letter.sender_name?.trim()
+    ? escapeHtml(letter.sender_name.trim())
+    : 'Your Past Self';
+
+  const recipientDisplay = letter.recipient_name?.trim()
+    ? escapeHtml(letter.recipient_name.trim())
+    : null;
+
   return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>A letter from your past self 💌</title>
+  <title>A letter from the past 💌</title>
 </head>
-<body style="margin: 0; padding: 24px 12px; background-color: #3b251d; font-family: 'Georgia', serif; color: #4A3026;">
+<body style="margin: 0; padding: 24px 12px; background-color: #2B1B15; font-family: 'Georgia', serif; color: #3B251D;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width: 620px; margin: 0 auto;">
     <tr>
       <td style="padding: 0;">
-        <!-- Envelope Header Bar -->
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #6B4938; border-radius: 12px 12px 0 0; padding: 18px 24px; text-align: center;">
+        
+        <!-- ==========================================
+             TOP CALL-TO-ACTION CARD: BEAUTIFUL CLICKABLE LINK 
+             ========================================== -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #FAF5EE; border: 2px solid #722F37; border-radius: 14px 14px 0 0; border-bottom: 2px dashed #A88968; text-align: center; box-shadow: 0 4px 16px rgba(0,0,0,0.25);">
           <tr>
-            <td>
-              <div style="font-size: 13px; letter-spacing: 3px; color: #DCC7A5; text-transform: uppercase;">
-                ✧ ⋆｡°✩ DEAR TOMORROW ✩°｡⋆ ✧
+            <td style="padding: 24px 22px 20px 22px; background: linear-gradient(180deg, #FFFDF9 0%, #F5EBDD 100%); border-radius: 12px 12px 0 0;">
+              <div style="font-size: 11px; letter-spacing: 2.5px; color: #722F37; text-transform: uppercase; font-weight: bold; margin-bottom: 6px;">
+                ✦ Dedicated Vintage Diary Page ✦
               </div>
-              <div style="font-size: 11px; color: #B58B62; margin-top: 4px; font-style: italic;">
-                Delivered across the gentle currents of time
+              <div style="font-size: 19px; color: #2B1B15; font-family: 'Georgia', serif; font-style: italic; font-weight: bold; line-height: 1.35; margin-bottom: 12px;">
+                “Your letter has been preserved in time.”
+              </div>
+              <p style="margin: 0 0 16px 0; font-size: 13px; color: #634832; line-height: 1.5; max-width: 460px; margin-left: auto; margin-right: auto;">
+                Click below to open this letter on your private, beautifully designed vintage diary page with aged parchment and delicate calligraphy:
+              </p>
+              
+              <!-- Prominent CTA Button -->
+              <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+                <tr>
+                  <td align="center" style="border-radius: 30px; background-color: #722F37; box-shadow: 0 4px 12px rgba(114, 47, 55, 0.38);">
+                    <a href="${viewUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 14px 32px; font-family: 'Georgia', serif; font-size: 15px; font-weight: bold; color: #FFF8EE; text-decoration: none; border-radius: 30px; border: 1.5px solid #D6C0A5; letter-spacing: 0.5px;">
+                      📖 Read Full Letter on Dedicated Diary Page ➔
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <div style="margin-top: 10px; font-size: 11px; color: #8C6D53; font-style: italic;">
+                Private & Secure · Click to open on mobile or desktop
               </div>
             </td>
           </tr>
         </table>
 
-        <!-- Parchment Body -->
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #F5EBDD; border-left: 1px solid #DCC7A5; border-right: 1px solid #DCC7A5; padding: 36px 32px; box-shadow: inset 0 0 40px rgba(74, 48, 38, 0.08);">
+        <!-- Vintage Header Ribbon -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #4A3026; padding: 12px 24px; text-align: center; border-left: 1px solid #A88968; border-right: 1px solid #A88968;">
           <tr>
             <td>
-              <!-- Postmark Stamp & Date -->
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 28px; border-bottom: 1px dashed #B58B62; padding-bottom: 18px;">
+              <div style="font-size: 12px; letter-spacing: 3px; color: #D6C0A5; text-transform: uppercase;">
+                ✧ ⋆｡°✩ DEAR TOMORROW · TIME ARCHIVES ✩°｡⋆ ✧
+              </div>
+            </td>
+          </tr>
+        </table>
+
+        <!-- Main Letter Content Preview on Warm Parchment -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #F5EBDD; border-left: 1px solid #A88968; border-right: 1px solid #A88968; padding: 32px 28px; box-shadow: inset 0 0 35px rgba(56, 32, 22, 0.08);">
+          <tr>
+            <td>
+              
+              <!-- Postmark Stamp, Origin & Recipient Details -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px; border-bottom: 1px dashed #A88968; padding-bottom: 16px;">
                 <tr>
-                  <td align="left" style="vertical-align: middle;">
-                    <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; color: #6B4938; font-weight: bold;">
-                      📮 Air-Mail of the Soul
+                  <td align="left" style="vertical-align: top;">
+                    <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #722F37; font-weight: bold;">
+                      📮 Letter Preview
                     </div>
-                    <div style="font-size: 13px; color: #6B4938; margin-top: 4px;">
-                      Penned on: <em>${writtenDate}</em>
+                    <div style="font-size: 14px; color: #382016; margin-top: 5px;">
+                      <strong>Penned on:</strong> ${writtenDate}
                     </div>
+                    <div style="font-size: 13px; color: #634832; margin-top: 3px;">
+                      <strong>From:</strong> <em>${senderDisplay}</em>
+                    </div>
+                    ${recipientDisplay ? `
+                    <div style="font-size: 13px; color: #634832; margin-top: 2px;">
+                      <strong>To:</strong> <em>${recipientDisplay}</em>
+                    </div>
+                    ` : ''}
                   </td>
-                  <td align="right" style="vertical-align: middle;">
-                    <div style="display: inline-block; border: 2px dashed #6B4938; padding: 6px 12px; border-radius: 6px; font-size: 11px; text-transform: uppercase; color: #4A3026; letter-spacing: 1px;">
-                      ✦ TIMESTAMPT ✦<br/>
-                      <span style="font-size: 9px; color: #B58B62;">PAID IN HOPE</span>
+                  <td align="right" style="vertical-align: top;">
+                    <div style="display: inline-block; border: 1.5px dashed #722F37; padding: 6px 10px; border-radius: 6px; font-size: 10px; text-transform: uppercase; color: #382016; letter-spacing: 1px; text-align: center; background: rgba(226, 208, 184, 0.5);">
+                      ✦ TIME-POSTED ✦<br/>
+                      <span style="font-size: 8px; color: #722F37; font-weight: bold;">DELIVERED</span>
                     </div>
                   </td>
                 </tr>
               </table>
 
               <!-- Letter Title -->
-              <h1 style="font-size: 24px; color: #4A3026; margin: 0 0 20px 0; font-weight: normal; font-style: italic; border-bottom: 2px solid #DCC7A5; padding-bottom: 12px;">
-                "${safeTitle}"
+              <h1 style="font-size: 23px; color: #2B1B15; margin: 0 0 20px 0; font-weight: normal; font-style: italic; border-bottom: 1.5px solid #D6C0A5; padding-bottom: 10px;">
+                “${safeTitle}”
               </h1>
 
-              <!-- Letter Content -->
-              <div style="font-size: 16px; line-height: 1.9; color: #4A3026; background: rgba(255, 249, 240, 0.5); padding: 20px; border-radius: 8px; border-left: 3px solid #B58B62;">
+              <!-- Letter Text Content -->
+              <div style="font-size: 16px; line-height: 1.85; color: #382016; background: rgba(255, 253, 249, 0.65); padding: 22px; border-radius: 8px; border-left: 3px solid #722F37;">
                 ${formattedContent}
               </div>
 
-              <!-- Wax Seal Emblem Decoration -->
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top: 36px; text-align: center;">
+              <!-- Secondary Link & Wax Seal -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top: 32px; text-align: center;">
                 <tr>
                   <td align="center">
-                    <div style="display: inline-block; width: 56px; height: 56px; border-radius: 50%; background: #6B4938; border: 3px double #DCC7A5; line-height: 50px; text-align: center; color: #F5EBDD; font-size: 18px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
-                      DT
-                    </div>
-                    <div style="font-size: 12px; color: #6B4938; margin-top: 8px; font-style: italic;">
-                      Sealed with remembrance
+                    <a href="${viewUrl}" target="_blank" rel="noopener noreferrer" style="color: #722F37; font-size: 14px; font-style: italic; font-weight: bold; text-decoration: underline;">
+                      Click here to visit your permanent letter sanctuary ➔
+                    </a>
+                    
+                    <div style="margin-top: 20px;">
+                      <div style="display: inline-block; width: 52px; height: 52px; border-radius: 50%; background: #722F37; border: 2.5px double #D6C0A5; line-height: 48px; text-align: center; color: #FAF5EE; font-size: 17px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+                        DT
+                      </div>
+                      <div style="font-size: 11px; color: #634832; margin-top: 6px; font-style: italic;">
+                        Sealed in timeless remembrance
+                      </div>
                     </div>
                   </td>
                 </tr>
               </table>
+
             </td>
           </tr>
         </table>
 
         <!-- Vintage Footer -->
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #4A3026; border-radius: 0 0 12px 12px; padding: 24px; text-align: center;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #2B1B15; border-radius: 0 0 14px 14px; padding: 24px; text-align: center; border-top: 2px solid #722F37;">
           <tr>
             <td>
-              <p style="margin: 0 0 8px 0; font-size: 14px; color: #F5EBDD; font-style: italic;">
+              <p style="margin: 0 0 8px 0; font-size: 14px; color: #FAF5EE; font-style: italic;">
                 “Written with love, by the you who existed back then.”
               </p>
-              <p style="margin: 0; font-size: 11px; color: #B58B62; letter-spacing: 1px;">
-                Made for the person you're becoming. ☾ · Ref: #${letter.id}
+              <p style="margin: 0; font-size: 11px; color: #A88968; letter-spacing: 0.5px;">
+                Dear Tomorrow · Letters across time ☾ · Ref: #${letter.id}
               </p>
             </td>
           </tr>
         </table>
+
       </td>
     </tr>
   </table>
@@ -150,22 +217,32 @@ export function generateLetterPlainText(letter: LetterRecord): string {
     year: 'numeric',
   });
 
+  const viewUrl = getLetterViewUrl(letter);
+  const senderDisplay = letter.sender_name?.trim() || 'Your Past Self';
+
   return `
 ======================================================
            *~*~* DEAR TOMORROW *~*~*
-     A letter from your past self, delivered today
+     A letter from the past, delivered today
 ======================================================
 
-Written on: ${writtenDate}
-Subject: ${letter.title}
-Reference: #${letter.id}
+📖 VIEW YOUR COMPLETE VINTAGE DIARY LETTER ONLINE:
+${viewUrl}
 
 ------------------------------------------------------
-${letter.content}
+Penned on: ${writtenDate}
+From: ${senderDisplay}
+${letter.recipient_name ? `To: ${letter.recipient_name}\n` : ''}Subject: ${letter.title}
+Reference: #${letter.id}
 ------------------------------------------------------
+
+${letter.content}
+
+------------------------------------------------------
+Open your private letter page:
+${viewUrl}
 
 "Written with love, by the you who existed back then."
-
 Made for the person you're becoming. ☾
 ======================================================
   `.trim();

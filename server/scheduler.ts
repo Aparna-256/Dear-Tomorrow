@@ -19,7 +19,7 @@ export async function checkAndDispatchDueLetters(): Promise<{ processed: number;
     // Query letters that are pending and due for delivery
     const result = await db.execute({
       sql: `
-        SELECT id, recipient_email, recipient_name, title, content, deliver_at, timezone, created_at, attempts
+        SELECT id, recipient_email, recipient_name, sender_name, view_token, title, content, deliver_at, timezone, created_at, attempts
         FROM letters
         WHERE status = 'pending' AND deliver_at <= ?
         ORDER BY deliver_at ASC
