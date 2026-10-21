@@ -16,9 +16,16 @@ import {
   RotateCcw,
   Volume2,
   VolumeX,
-  Music
+  Music,
+  Maximize2,
+  Download,
+  FileText,
+  ChevronDown,
+  Loader2
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface LetterData {
   id: string;
@@ -53,6 +60,28 @@ const SEGMENT_START = 20; // 00:20
 const SEGMENT_END = 63;   // 01:03
 const SEGMENT_DURATION = 43; // 43 seconds
 
+type AnimationStage = 'sealed' | 'unsealing' | 'emerging' | 'unrolling' | 'read';
+
+// Romantic Celebration Balloons
+const CELEBRATION_BALLOONS = [
+  { id: 1, left: '10%', color: '#722F37', size: 56, delay: '0.1s', speed: '6.5s', sway: '18px' },
+  { id: 2, left: '22%', color: '#D8B78E', size: 46, delay: '0.35s', speed: '7.2s', sway: '-22px' },
+  { id: 3, left: '34%', color: '#E8B4B8', size: 54, delay: '0.6s', speed: '6.8s', sway: '16px' },
+  { id: 4, left: '66%', color: '#FAF3E8', size: 50, delay: '0.2s', speed: '7.4s', sway: '-18px' },
+  { id: 5, left: '78%', color: '#8C2D19', size: 52, delay: '0.5s', speed: '6.3s', sway: '22px' },
+  { id: 6, left: '88%', color: '#C2A37E', size: 44, delay: '0.75s', speed: '7.0s', sway: '-15px' },
+];
+
+// Romantic Celebration Hearts & Stars
+const CELEBRATION_HEARTS = [
+  { id: 1, left: '16%', symbol: '💖', size: '1.5rem', delay: '0.15s', speed: '5.2s' },
+  { id: 2, left: '26%', symbol: '✨', size: '1.2rem', delay: '0.45s', speed: '5.8s' },
+  { id: 3, left: '40%', symbol: '💕', size: '1.7rem', delay: '0.1s', speed: '4.8s' },
+  { id: 4, left: '62%', symbol: '✦', size: '1.3rem', delay: '0.35s', speed: '6.0s' },
+  { id: 5, left: '72%', symbol: '💖', size: '1.6rem', delay: '0.65s', speed: '5.5s' },
+  { id: 6, left: '84%', symbol: '✧', size: '1.2rem', delay: '0.25s', speed: '6.2s' },
+];
+
 export const LetterDiaryPage: React.FC<LetterDiaryPageProps> = ({ token, onNavigateHome }) => {
   const [letter, setLetter] = useState<LetterData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,16 +89,35 @@ export const LetterDiaryPage: React.FC<LetterDiaryPageProps> = ({ token, onNavig
   const [copied, setCopied] = useState(false);
   const [candleMode, setCandleMode] = useState(false);
 
-  // Music & Unseal states
-  const [isUnsealed, setIsUnsealed] = useState(false);
+  // Envelope and Scroll Unrolling animation state machine
+  const [stage, setStage] = useState<AnimationStage>('sealed');
+  const [showCelebration, setShowCelebration] = useState(false);
+
+  // Music state
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [segmentProgress, setSegmentProgress] = useState(0);
   const [segmentFinished, setSegmentFinished] = useState(false);
-  const [showOpenPrompt, setShowOpenPrompt] = useState(true);
 
   const playerRef = useRef<any>(null);
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Keepsake Download state
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [showKeepsakeMenu, setShowKeepsakeMenu] = useState(false);
+  const [keepsakeDownloaded, setKeepsakeDownloaded] = useState(false);
+  const keepsakeMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close keepsake dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (keepsakeMenuRef.current && !keepsakeMenuRef.current.contains(event.target as Node)) {
+        setShowKeepsakeMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // 1. Fetch letter details from backend
   useEffect(() => {
@@ -119,7 +167,7 @@ export const LetterDiaryPage: React.FC<LetterDiaryPageProps> = ({ token, onNavig
           playerVars: {
             start: SEGMENT_START,
             end: SEGMENT_END,
-            autoplay: 1,
+            autoplay: 0,
             controls: 0,
             disablekb: 1,
             fs: 0,
@@ -130,27 +178,18 @@ export const LetterDiaryPage: React.FC<LetterDiaryPageProps> = ({ token, onNavig
             origin: window.location.origin,
           },
           events: {
-            onReady: (event: any) => {
+            onReady: (_event: any) => {
               if (!isMounted) return;
-              // Attempt autoplay with sound
-              try {
-                event.target.seekTo(SEGMENT_START, true);
-                event.target.playVideo();
-              } catch (e) {
-                console.log('Autoplay attempt caught:', e);
-              }
             },
             onStateChange: (event: any) => {
               if (!isMounted) return;
               // 1 = PLAYING, 2 = PAUSED, 0 = ENDED
               if (event.data === 1) {
                 setIsPlaying(true);
-                setShowOpenPrompt(false);
-                setIsUnsealed(true);
               } else if (event.data === 2) {
                 setIsPlaying(false);
               } else if (event.data === 0) {
-                // Video ended (reached SEGMENT_END)
+                // Video ended (reached SEGMENT_END at 01:03)
                 setIsPlaying(false);
                 setSegmentFinished(true);
                 setSegmentProgress(SEGMENT_DURATION);
@@ -169,11 +208,9 @@ export const LetterDiaryPage: React.FC<LetterDiaryPageProps> = ({ token, onNavig
       }
     };
 
-    // If API script already loaded
     if (window.YT && window.YT.Player) {
       createPlayer();
     } else {
-      // Load the script
       const existingScript = document.getElementById('youtube-iframe-api');
       if (!existingScript) {
         const tag = document.createElement('script');
@@ -239,20 +276,11 @@ export const LetterDiaryPage: React.FC<LetterDiaryPageProps> = ({ token, onNavig
     };
   }, [isPlaying]);
 
-  // 4. Handle "Open Your Letter 💌" action
-  const handleOpenLetterWithMusic = () => {
-    setIsUnsealed(true);
-    setShowOpenPrompt(false);
+  // 4. Interactive Wax Seal Click: Sequential Envelope Opening, Emergence, & Scroll Unrolling
+  const handleUnsealEnvelope = () => {
+    if (stage !== 'sealed') return;
 
-    // Trigger golden and warm celebratory stardust confetti!
-    confetti({
-      particleCount: 65,
-      spread: 70,
-      origin: { y: 0.5 },
-      colors: ['#D6C0A5', '#722F37', '#EBDCC7', '#C2A37E', '#8C2D19'],
-    });
-
-    // Start audio playback
+    // 1. Start music immediately upon user click (satisfies browser policy)
     if (playerRef.current) {
       try {
         if (typeof playerRef.current.unMute === 'function') {
@@ -265,8 +293,80 @@ export const LetterDiaryPage: React.FC<LetterDiaryPageProps> = ({ token, onNavig
         setSegmentFinished(false);
         setSegmentProgress(0);
       } catch (err) {
-        console.warn('Playback start error:', err);
+        console.warn('Audio playback error:', err);
       }
+    }
+
+    // Step A: Wax seal cracks & flap opens
+    setStage('unsealing');
+
+    // Step B: Envelope flap wide open -> Letter slowly slides out of envelope
+    setTimeout(() => {
+      setStage('emerging');
+      setShowCelebration(true);
+
+      // Elegant double confetti cannon burst
+      confetti({
+        particleCount: 55,
+        angle: 60,
+        spread: 60,
+        origin: { x: 0.22, y: 0.65 },
+        colors: ['#722F37', '#8C2D19', '#D8B78E', '#F5EBDD', '#E2D0B8', '#E8B4B8'],
+      });
+      confetti({
+        particleCount: 55,
+        angle: 120,
+        spread: 60,
+        origin: { x: 0.78, y: 0.65 },
+        colors: ['#722F37', '#8C2D19', '#D8B78E', '#F5EBDD', '#E2D0B8', '#E8B4B8'],
+      });
+    }, 700);
+
+    // Step C: Letter begins unrolling from top to bottom like a royal parchment scroll
+    setTimeout(() => {
+      setStage('unrolling');
+
+      // Second gentle stardust celebration shower
+      confetti({
+        particleCount: 40,
+        spread: 85,
+        origin: { y: 0.35 },
+        colors: ['#D8B78E', '#FFFDF8', '#722F37', '#C2A37E'],
+      });
+    }, 1600);
+
+    // Step D: Unrolling completes -> Reveal complete personalized vintage diary layout
+    setTimeout(() => {
+      setStage('read');
+      // Hide celebration balloons after they float away
+      setTimeout(() => setShowCelebration(false), 8000);
+    }, 4200);
+  };
+
+  // Replay Opening Experience
+  const handleReplayOpening = () => {
+    setStage('sealed');
+    setShowCelebration(false);
+    if (playerRef.current) {
+      try {
+        playerRef.current.pauseVideo();
+        playerRef.current.seekTo(SEGMENT_START, true);
+        setIsPlaying(false);
+        setSegmentProgress(0);
+      } catch {}
+    }
+  };
+
+  // Skip animation directly to reading view
+  const handleSkipToLetter = () => {
+    setStage('read');
+    setShowCelebration(false);
+    if (playerRef.current && !isPlaying) {
+      try {
+        playerRef.current.seekTo(SEGMENT_START, true);
+        playerRef.current.playVideo();
+        setIsPlaying(true);
+      } catch {}
     }
   };
 
@@ -323,8 +423,133 @@ export const LetterDiaryPage: React.FC<LetterDiaryPageProps> = ({ token, onNavig
     } catch {}
   };
 
+  // Direct PDF Keepsake Download
+  const handleDownloadPdf = async () => {
+    if (!letter || isGeneratingPdf) return;
+
+    setIsGeneratingPdf(true);
+    setShowKeepsakeMenu(false);
+
+    try {
+      // If the envelope is not yet opened, bring the letter to reading view
+      if (stage !== 'read') {
+        setStage('read');
+      }
+
+      // Allow DOM layout and fonts to settle
+      await new Promise(resolve => setTimeout(resolve, 350));
+
+      const folioElement = document.getElementById('printable-letter');
+      if (!folioElement) {
+        throw new Error('Letter document element not found');
+      }
+
+      // Capture high-resolution parchment canvas
+      const canvas = await html2canvas(folioElement, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#FAF3E8',
+        logging: false,
+        windowWidth: 1200,
+      });
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      const pdfWidth = 210; // Standard A4 width in mm
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      const pageHeight = Math.max(297, pdfHeight + 10);
+
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: [pdfWidth, pageHeight],
+      });
+
+      pdf.addImage(imgData, 'JPEG', 0, 5, pdfWidth, pdfHeight);
+
+      const safeTitle = (letter.title || 'Personalized_Letter')
+        .trim()
+        .replace(/[^a-zA-Z0-9_\-\s]/g, '')
+        .replace(/\s+/g, '_');
+
+      pdf.save(`Dear_Tomorrow_${safeTitle}_Keepsake.pdf`);
+
+      setKeepsakeDownloaded(true);
+      setTimeout(() => setKeepsakeDownloaded(false), 3500);
+    } catch (err) {
+      console.error('PDF download error:', err);
+      // Fallback: download clean text archive
+      handleDownloadTextArchive();
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
+  // Plain Text Offline Archive Backup
+  const handleDownloadTextArchive = () => {
+    if (!letter) return;
+    const formattedCreated = new Date(letter.createdAt).toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+    const formattedDeliver = new Date(letter.deliverAt).toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+
+    const content = [
+      '=====================================================================',
+      '                       DEAR TOMORROW ARCHIVE                         ',
+      '                   A Letter to Your Future Self                      ',
+      '=====================================================================',
+      '',
+      `TITLE: ${letter.title}`,
+      `PENNED ON: ${formattedCreated}`,
+      letter.senderName ? `WRITTEN BY: ${letter.senderName}` : '',
+      letter.recipientName ? `ADDRESSED TO: ${letter.recipientName}` : '',
+      `DELIVERY DATE: ${formattedDeliver}`,
+      `ARCHIVE REFERENCE: #${letter.id}`,
+      '',
+      '---------------------------------------------------------------------',
+      '',
+      letter.content,
+      '',
+      '---------------------------------------------------------------------',
+      letter.senderName ? `— Always, ${letter.senderName}` : '— Always, Your Past Self',
+      '“Written with love, by the you who existed back then.”',
+      '',
+      'Preserved in the Time Post Vault · Dear Tomorrow',
+      '=====================================================================',
+    ].filter(Boolean).join('\n');
+
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const safeTitle = (letter.title || 'Letter')
+      .trim()
+      .replace(/[^a-zA-Z0-9_\-\s]/g, '')
+      .replace(/\s+/g, '_');
+    a.download = `Dear_Tomorrow_${safeTitle}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setShowKeepsakeMenu(false);
+  };
+
+  // Browser print dialog
   const handlePrint = () => {
-    window.print();
+    setShowKeepsakeMenu(false);
+    if (stage !== 'read') {
+      setStage('read');
+      setTimeout(() => window.print(), 350);
+    } else {
+      window.print();
+    }
   };
 
   if (loading) {
@@ -401,7 +626,7 @@ export const LetterDiaryPage: React.FC<LetterDiaryPageProps> = ({ token, onNavig
 
   return (
     <div className={`diary-viewport ${candleMode ? 'candlelight-active' : ''}`}>
-      {/* Official YouTube Iframe container (positioned cleanly off-screen to comply with policies while keeping audio pure) */}
+      {/* Official YouTube Iframe container (positioned cleanly off-screen) */}
       <div
         aria-hidden="true"
         style={{
@@ -417,6 +642,52 @@ export const LetterDiaryPage: React.FC<LetterDiaryPageProps> = ({ token, onNavig
       >
         <div id="yt-audio-player"></div>
       </div>
+
+      {/* Floating Celebration Layer: Balloons & Hearts */}
+      {showCelebration && (
+        <div className="celebration-layer" aria-hidden="true">
+          {/* Floating Balloons */}
+          {CELEBRATION_BALLOONS.map(b => (
+            <div
+              key={b.id}
+              className="floating-balloon-item"
+              style={{
+                left: b.left,
+                animationDelay: b.delay,
+                animationDuration: b.speed,
+                ['--sway-dist' as any]: b.sway,
+              }}
+            >
+              <svg width={b.size} height={b.size * 1.5} viewBox="0 0 50 75" fill="none">
+                {/* Balloon body */}
+                <ellipse cx="25" cy="28" rx="22" ry="26" fill={b.color} />
+                {/* Specular shine */}
+                <ellipse cx="18" cy="18" rx="7" ry="11" fill="rgba(255,255,255,0.38)" transform="rotate(-20 18 18)" />
+                {/* Knot */}
+                <polygon points="22,54 28,54 25,58" fill={b.color} />
+                {/* Wavy string */}
+                <path d="M25,58 Q23,65 26,70 T24,75" stroke="#D8B78E" strokeWidth="1.2" fill="none" opacity="0.8" />
+              </svg>
+            </div>
+          ))}
+
+          {/* Floating Romantic Hearts */}
+          {CELEBRATION_HEARTS.map(h => (
+            <div
+              key={h.id}
+              className="floating-heart-item"
+              style={{
+                left: h.left,
+                fontSize: h.size,
+                animationDelay: h.delay,
+                animationDuration: h.speed,
+              }}
+            >
+              {h.symbol}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Top Navigation & Minimal Vintage Audio Controls */}
       <header className="diary-nav-bar no-print">
@@ -489,6 +760,18 @@ export const LetterDiaryPage: React.FC<LetterDiaryPageProps> = ({ token, onNavig
 
         {/* Utility Actions */}
         <div className="diary-nav-actions">
+          {stage === 'read' && (
+            <button
+              type="button"
+              onClick={handleReplayOpening}
+              className="diary-action-btn"
+              title="Re-seal and watch envelope unrolling again"
+            >
+              <RotateCcw size={14} />
+              <span className="hide-on-mobile">Re-seal & Open</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={() => setCandleMode(prev => !prev)}
@@ -509,71 +792,249 @@ export const LetterDiaryPage: React.FC<LetterDiaryPageProps> = ({ token, onNavig
             <span>{copied ? 'Link Copied!' : 'Copy Link'}</span>
           </button>
 
-          <button
-            type="button"
-            onClick={handlePrint}
-            className="diary-action-btn"
-            title="Print or save as keepsake PDF"
-          >
-            <Printer size={15} />
-            <span className="hide-on-mobile">Save Keepsake</span>
-          </button>
+          {/* Keepsake Action Group (Direct PDF Download + Options Menu) */}
+          <div className="keepsake-action-container" ref={keepsakeMenuRef}>
+            <div className="keepsake-btn-group">
+              <button
+                type="button"
+                onClick={handleDownloadPdf}
+                disabled={isGeneratingPdf}
+                className="keepsake-main-btn"
+                title="Download personalized letter as a vintage PDF keepsake"
+                aria-label="Download letter as PDF keepsake"
+              >
+                {isGeneratingPdf ? (
+                  <>
+                    <Loader2 size={15} className="spin-icon" />
+                    <span>Generating...</span>
+                  </>
+                ) : keepsakeDownloaded ? (
+                  <>
+                    <Check size={15} style={{ color: '#2D5A27' }} />
+                    <span>Downloaded!</span>
+                  </>
+                ) : (
+                  <>
+                    <Download size={15} />
+                    <span className="hide-on-mobile">Save Keepsake</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowKeepsakeMenu(prev => !prev)}
+                className={`keepsake-chevron-btn ${showKeepsakeMenu ? 'active' : ''}`}
+                title="More keepsake options"
+                aria-label="More keepsake options"
+                aria-expanded={showKeepsakeMenu}
+              >
+                <ChevronDown size={14} />
+              </button>
+            </div>
+
+            {/* Keepsake Dropdown Options */}
+            {showKeepsakeMenu && (
+              <div className="keepsake-dropdown-menu" role="menu">
+                <button
+                  type="button"
+                  onClick={handleDownloadPdf}
+                  disabled={isGeneratingPdf}
+                  className="keepsake-dropdown-item"
+                  role="menuitem"
+                >
+                  <span className="keepsake-item-icon">
+                    <Download size={16} />
+                  </span>
+                  <div className="keepsake-item-content">
+                    <span className="keepsake-item-title">Download PDF Keepsake</span>
+                    <span className="keepsake-item-desc">High-res parchment with wax seal</span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleDownloadTextArchive}
+                  className="keepsake-dropdown-item"
+                  role="menuitem"
+                >
+                  <span className="keepsake-item-icon">
+                    <FileText size={16} />
+                  </span>
+                  <div className="keepsake-item-content">
+                    <span className="keepsake-item-title">Download Text Backup</span>
+                    <span className="keepsake-item-desc">Plain text (.txt) offline archive</span>
+                  </div>
+                </button>
+
+                <div className="keepsake-dropdown-divider" aria-hidden="true"></div>
+
+                <button
+                  type="button"
+                  onClick={handlePrint}
+                  className="keepsake-dropdown-item"
+                  role="menuitem"
+                >
+                  <span className="keepsake-item-icon">
+                    <Printer size={16} />
+                  </span>
+                  <div className="keepsake-item-content">
+                    <span className="keepsake-item-title">Print Letter</span>
+                    <span className="keepsake-item-desc">Open browser print dialog</span>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
       {/* =========================================================================
-          OPEN YOUR LETTER 💌 UNSEALING MODAL / PROMPT (If Autoplay was blocked)
+          STAGE 1 to 4: 3D ANIMATED VINTAGE ENVELOPE & UNROLLING LETTER SCROLL
           ========================================================================= */}
-      {showOpenPrompt && !isUnsealed && (
-        <div className="unseal-invitation-overlay" role="dialog" aria-modal="true" aria-label="Open Your Letter">
-          <div className="unseal-envelope-card">
-            <div className="corner-ornament top-left" aria-hidden="true">✦</div>
-            <div className="corner-ornament top-right" aria-hidden="true">✧</div>
-            <div className="corner-ornament bottom-left" aria-hidden="true">☾</div>
-            <div className="corner-ornament bottom-right" aria-hidden="true">୨୧</div>
+      {stage !== 'read' && (
+        <section className={`envelope-ceremony-stage stage-${stage}`} aria-label="Interactive letter unsealing ceremony">
+          {/* Skip animation option */}
+          <button
+            type="button"
+            onClick={handleSkipToLetter}
+            className="btn-skip-unseal no-print"
+            title="Skip animation to read letter immediately"
+          >
+            <span>Skip to letter</span>
+            <Maximize2 size={13} />
+          </button>
 
-            <div className="envelope-air-mail-stripe" aria-hidden="true"></div>
+          <div className="envelope-scene-wrapper">
+            {/* The 3D Vintage Envelope */}
+            <div className={`vintage-envelope-3d ${stage}`}>
+              {/* Envelope Back Plate (interior lining) */}
+              <div className="env-back-interior"></div>
 
-            <div className="envelope-seal-badge" aria-hidden="true">
-              <div className="giant-wax-seal pulse-glow">DT</div>
+              {/* Emergence / Unrolling Letter Scroll */}
+              <div className="env-scroll-carriage">
+                <div className="env-scroll-cylinder top-cylinder">
+                  <div className="roller-finial left"></div>
+                  <div className="roller-rod"></div>
+                  <div className="roller-finial right"></div>
+                </div>
+
+                <div className="env-scroll-canvas">
+                  <div className="scroll-paper-texture">
+                    {/* Watermark Postmark */}
+                    <div className="scroll-postmark-badge">
+                      <span>TIME POST AIR-MAIL</span>
+                      <span className="scroll-star-row">✦ ✧ ✦</span>
+                    </div>
+
+                    <h2 className="scroll-penned-title font-display">
+                      “{letter.title}”
+                    </h2>
+
+                    <div className="scroll-meta-line font-script">
+                      Penned on {formattedWrittenDate}
+                      {letter.senderName && <> · from {letter.senderName}</>}
+                    </div>
+
+                    <div className="scroll-body-preview">
+                      <p className="scroll-paragraph-preview font-body">
+                        {letter.content.slice(0, 320)}...
+                      </p>
+                    </div>
+
+                    <div className="scroll-seal-imprint">
+                      <div className="mini-wax-seal">DT</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="env-scroll-cylinder bottom-cylinder">
+                  <div className="roller-finial left"></div>
+                  <div className="roller-rod"></div>
+                  <div className="roller-finial right"></div>
+                </div>
+              </div>
+
+              {/* Envelope Front Pocket (Lower triangle & side flaps) */}
+              <div className="env-pocket-front">
+                {/* Air-mail border edge */}
+                <div className="env-airmail-border-stripe" aria-hidden="true"></div>
+
+                {/* Postage Stamp & Cancellation Postmark */}
+                <div className="env-postmark-stamp" aria-hidden="true">
+                  <div className="postmark-circle-seal">
+                    <span className="seal-text-top">AIR MAIL</span>
+                    <span className="seal-text-center">★ TIME POST ★</span>
+                    <span className="seal-text-bottom">{formattedWrittenDate}</span>
+                  </div>
+                  <div className="postage-stamp-box">
+                    <span className="stamp-art">🕊️</span>
+                    <span className="stamp-denom">DT</span>
+                  </div>
+                </div>
+
+                {/* Handwritten Calligraphy Address */}
+                <div className="env-address-lines">
+                  <div className="env-addr-row">
+                    <span className="addr-tag font-script">To:</span>
+                    <span className="addr-content font-handwritten">
+                      {letter.recipientName || 'Dearest You'}
+                    </span>
+                  </div>
+                  <div className="env-addr-row">
+                    <span className="addr-tag font-script">From:</span>
+                    <span className="addr-content font-handwritten">
+                      {letter.senderName || 'Your Past Self'}
+                    </span>
+                  </div>
+                  <div className="env-addr-row sub">
+                    <span className="addr-note">
+                      Delivered across time · Ref: #{letter.id}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Top Triangular Flap with 3D Flip */}
+              <div className="env-flap-top">
+                <div className="flap-triangle-shape"></div>
+
+                {/* Center Wax Seal Button */}
+                <button
+                  type="button"
+                  onClick={handleUnsealEnvelope}
+                  disabled={stage !== 'sealed'}
+                  className={`wax-seal-interactive-btn ${stage !== 'sealed' ? 'seal-broken' : ''}`}
+                  title="Click to break the wax seal, start the melody & unroll your letter"
+                  aria-label="Click to break the wax seal, play background music, and unroll letter"
+                >
+                  <span className="wax-seal-crest">DT</span>
+                  <span className="wax-pulse-ring" aria-hidden="true"></span>
+                  <span className="wax-shimmer-sparkle left" aria-hidden="true">✦</span>
+                  <span className="wax-shimmer-sparkle right" aria-hidden="true">✧</span>
+                </button>
+              </div>
             </div>
 
-            <div className="envelope-header-text">
-              <span className="vintage-post-stamp-sub font-script">Time Post Vault · Sealed with Hope</span>
-              <h2 className="unseal-card-title">A Letter Has Arrived Across Time</h2>
-              <p className="unseal-card-excerpt">
-                Penned on <em>{formattedWrittenDate}</em>
-                {letter.senderName && <> by <strong>{letter.senderName}</strong></>}
-              </p>
-            </div>
-
-            <p className="unseal-romantic-note font-script">
-              “A tender melody waits within these pages to accompany your words…”
-            </p>
-
-            <button
-              type="button"
-              onClick={handleOpenLetterWithMusic}
-              className="btn-open-letter-ceremony"
-              aria-label="Open your letter and start background melody"
-            >
-              <span className="wax-stamp-emblem" aria-hidden="true">💌</span>
-              <span>Open Your Letter 💌</span>
-            </button>
-
-            <span className="unseal-footnote">
-              Begins your vintage reading journey with accompanying melody (0:20 – 1:03)
-            </span>
+            {/* Hint instruction under envelope */}
+            {stage === 'sealed' && (
+              <div className="envelope-click-hint" onClick={handleUnsealEnvelope}>
+                <span className="hint-hand-icon">💌</span>
+                <span className="hint-text font-script">
+                  “Click the crimson wax seal to break the seal, hear the melody & unroll your letter…”
+                </span>
+                <span className="hint-gem">✦</span>
+              </div>
+            )}
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Main Vintage Diary Book / Folio */}
-      <main className="diary-book-wrapper">
-        <article
-          className={`vintage-diary-folio ${isUnsealed ? 'unsealed-appear' : ''}`}
-          id="printable-letter"
-        >
+      {/* =========================================================================
+          STAGE 5: FULL PERSONALIZED VINTAGE DIARY READING VIEW
+          ========================================================================= */}
+      <main className={`diary-book-wrapper ${stage === 'read' ? 'folio-visible' : 'folio-hidden'}`}>
+        <article className="vintage-diary-folio" id="printable-letter">
           {/* Silk Bookmark Ribbon */}
           <div className="silk-bookmark-ribbon" aria-hidden="true">
             <div className="ribbon-tail"></div>
@@ -653,7 +1114,7 @@ export const LetterDiaryPage: React.FC<LetterDiaryPageProps> = ({ token, onNavig
               const trimmed = paragraph.trim();
               if (!trimmed) return null;
 
-              // On the very first paragraph, optionally apply elegant drop cap styling
+              // On the very first paragraph, apply elegant drop cap styling
               const isFirst = pIdx === 0;
 
               return (
@@ -684,6 +1145,32 @@ export const LetterDiaryPage: React.FC<LetterDiaryPageProps> = ({ token, onNavig
                   — Always, Your Past Self
                 </p>
               )}
+
+              <button
+                type="button"
+                onClick={handleDownloadPdf}
+                disabled={isGeneratingPdf}
+                className="btn-folio-download no-print"
+                title="Download this personalized letter as a vintage PDF keepsake"
+                aria-label="Download keepsake PDF"
+              >
+                {isGeneratingPdf ? (
+                  <>
+                    <Loader2 size={13} className="spin-icon" />
+                    <span>Generating Keepsake PDF...</span>
+                  </>
+                ) : keepsakeDownloaded ? (
+                  <>
+                    <Check size={13} style={{ color: '#2D5A27' }} />
+                    <span>Keepsake PDF Downloaded!</span>
+                  </>
+                ) : (
+                  <>
+                    <Download size={13} />
+                    <span>Download Keepsake PDF</span>
+                  </>
+                )}
+              </button>
             </div>
 
             {/* Embossed Crimson Wax Seal */}
