@@ -60,9 +60,9 @@ export const EmailConfigModal: React.FC<EmailConfigModalProps> = ({
         body: JSON.stringify(payload),
       });
 
-      const saveData = await saveRes.json();
+      const saveData = await saveRes.json().catch(() => null);
       if (!saveRes.ok) {
-        throw new Error(saveData.error || 'Failed to save email settings.');
+        throw new Error(saveData?.error || `Failed to save email settings (HTTP ${saveRes.status}).`);
       }
 
       // 2. Immediately send a test verification email to the user's Gmail!
@@ -73,15 +73,15 @@ export const EmailConfigModal: React.FC<EmailConfigModalProps> = ({
         body: JSON.stringify({ recipientEmail: targetInbox }),
       });
 
-      const testData = await testRes.json();
-      if (testRes.ok && testData.success) {
+      const testData = await testRes.json().catch(() => null);
+      if (testRes.ok && testData?.success) {
         setFeedback({
           type: 'success',
           message: `Connected successfully! A verification test letter has been dispatched to ${targetInbox}. Check your inbox!`,
         });
         if (onConfigSaved) onConfigSaved();
       } else {
-        throw new Error(testData.error || 'Credentials saved, but test dispatch failed.');
+        throw new Error(testData?.error || `Credentials saved, but test dispatch failed (HTTP ${testRes.status}).`);
       }
     } catch (err: any) {
       setFeedback({ type: 'error', message: err.message || 'Error configuring email.' });

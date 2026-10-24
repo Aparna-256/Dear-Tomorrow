@@ -481,13 +481,26 @@ app.post('/api/letters/send-test', rateLimiter, async (req: Request, res: Respon
   }
 });
 
+// Fallback for API routes: always return JSON 404 rather than HTML
+app.use('/api', (_req: Request, res: Response) => {
+  res.status(404).json({ error: 'The requested API route was not found in our archives.' });
+});
+
 // Serve frontend in production
 const distPath = path.resolve(__dirname, '../dist');
 app.use(express.static(distPath));
 
-// Fallback for SPA routing in Express 5
+// Fallback for SPA routing in Express 5 (only for non-API routes)
 app.use((_req: Request, res: Response) => {
   res.sendFile(path.join(distPath, 'index.html'));
+});
+
+// Global JSON error handling middleware
+app.use((err: any, _req: Request, res: Response, _next: any) => {
+  console.error('[API Server Error]', err);
+  res.status(err.status || 500).json({
+    error: err.message || 'An unexpected server error occurred.',
+  });
 });
 
 // Boot Database and Scheduler
@@ -495,7 +508,7 @@ async function startServer() {
   await initDatabase();
   startScheduler(20000); // Check every 20 seconds
 
-  app.listen(PORT, () => {
+  app.listen(Number(PORT), '0.0.0.0', () => {
     console.log(`[Dear Tomorrow Server] Listening gently on http://localhost:${PORT}`);
   });
 }

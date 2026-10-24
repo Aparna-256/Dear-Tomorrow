@@ -104,9 +104,9 @@ export const ConfirmationCard = ({
       const res = await fetch(`/api/letters/${letterData.id}/send-now`, {
         method: 'POST',
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
 
-      if (res.ok && data.success) {
+      if (res.ok && data?.success) {
         setLetterStatus('delivered');
         setSendNowSuccess(`Letter successfully sent to ${letterData.recipientEmail}! Check your Gmail.`);
         if (data.previewUrl) {
@@ -116,7 +116,7 @@ export const ConfirmationCard = ({
           setLetterViewUrl(data.viewUrl);
         }
       } else {
-        setSendNowError(data.error || 'Failed to dispatch letter to recipient email.');
+        setSendNowError(data?.error || `Failed to dispatch letter to recipient email (HTTP ${res.status}).`);
       }
     } catch (err: any) {
       setSendNowError(err.message || 'Network error attempting to send letter.');
@@ -134,8 +134,8 @@ export const ConfirmationCard = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ recipientEmail: letterData.recipientEmail }),
       });
-      const data = await res.json();
-      if (res.ok && data.success) {
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.success) {
         setTestSent(true);
         if (data.previewUrl) {
           setPreviewUrl(data.previewUrl);
@@ -144,7 +144,7 @@ export const ConfirmationCard = ({
           setTestMessage(`Test sample dispatch sent directly to ${letterData.recipientEmail}!`);
         }
       } else {
-        setTestMessage(data.error || 'Could not dispatch test sample.');
+        setTestMessage(data?.error || `Could not dispatch test sample (HTTP ${res.status}).`);
       }
     } catch {
       setTestMessage('Network error dispatching test sample.');

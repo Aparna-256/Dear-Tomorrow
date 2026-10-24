@@ -391,10 +391,29 @@ export const LetterForm: React.FC<LetterFormProps> = ({ onSuccess }) => {
         }),
       });
 
-      const data = await response.json();
+      let data: any = null;
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        try {
+          data = await response.json();
+        } catch {
+          data = null;
+        }
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to seal and record your letter.');
+        const errorMsg = data?.error || (
+          response.status === 404
+            ? 'The letter dispatch service could not be reached (404). Please ensure the backend server is running.'
+            : response.status === 502 || response.status === 504
+            ? 'Cannot connect to the backend server right now. Please check your connection and try again.'
+            : `Failed to seal and record your letter (Error ${response.status}).`
+        );
+        throw new Error(errorMsg);
+      }
+
+      if (!data || !data.id) {
+        throw new Error('Received an invalid response from the time-capsule server. Please try again.');
       }
 
       // Celebrate with golden & warm stardust confetti!
