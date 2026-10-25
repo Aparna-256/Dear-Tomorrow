@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Mail, Key, CheckCircle2, AlertCircle, X, ExternalLink } from 'lucide-react';
+import { getApiUrl, parseApiResponse } from '../lib/api';
 
 interface EmailConfigModalProps {
   isOpen: boolean;
@@ -53,35 +54,32 @@ export const EmailConfigModal: React.FC<EmailConfigModalProps> = ({
         };
       }
 
-      // 1. Save settings to server .env
-      const saveRes = await fetch('/api/settings/email', {
+      // 1. Save settings to server .env / database
+      const saveRes = await fetch(getApiUrl('/api/settings/email'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
-      const saveData = await saveRes.json().catch(() => null);
-      if (!saveRes.ok) {
-        throw new Error(saveData?.error || `Failed to save email settings (HTTP ${saveRes.status}).`);
-      }
+      await parseApiResponse(saveRes, 'Failed to save email settings');
 
       // 2. Immediately send a test verification email to the user's Gmail!
       const targetInbox = testRecipient.trim() || gmailUser.trim() || defaultEmail;
-      const testRes = await fetch('/api/letters/send-test', {
+      const testRes = await fetch(getApiUrl('/api/letters/send-test'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ recipientEmail: targetInbox }),
       });
 
-      const testData = await testRes.json().catch(() => null);
-      if (testRes.ok && testData?.success) {
+      const testData = await parseApiResponse(testRes, 'Verification test dispatch');
+      if (testData?.success) {
         setFeedback({
           type: 'success',
           message: `Connected successfully! A verification test letter has been dispatched to ${targetInbox}. Check your inbox!`,
         });
         if (onConfigSaved) onConfigSaved();
       } else {
-        throw new Error(testData?.error || `Credentials saved, but test dispatch failed (HTTP ${testRes.status}).`);
+        throw new Error(testData?.error || 'Credentials saved, but verification test dispatch failed.');
       }
     } catch (err: any) {
       setFeedback({ type: 'error', message: err.message || 'Error configuring email.' });

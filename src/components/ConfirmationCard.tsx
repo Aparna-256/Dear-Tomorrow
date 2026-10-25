@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Mail, Calendar, Clock, Feather, CheckCircle2, Sparkles, Settings } from 'lucide-react';
 import { EmailConfigModal } from './EmailConfigModal';
+import { getApiUrl, parseApiResponse } from '../lib/api';
 
 export interface ConfirmedLetterData {
   id: string;
@@ -58,7 +59,7 @@ export const ConfirmationCard = ({
     let isMounted = true;
     const fetchStatus = async () => {
       try {
-        const res = await fetch(`/api/letters/${letterData.id}/status`);
+        const res = await fetch(getApiUrl(`/api/letters/${letterData.id}/status`));
         if (res.ok) {
           const data = await res.json();
           if (isMounted) {
@@ -101,12 +102,12 @@ export const ConfirmationCard = ({
       setSendNowError(null);
       setSendNowSuccess(null);
 
-      const res = await fetch(`/api/letters/${letterData.id}/send-now`, {
+      const res = await fetch(getApiUrl(`/api/letters/${letterData.id}/send-now`), {
         method: 'POST',
       });
-      const data = await res.json().catch(() => null);
+      const data = await parseApiResponse(res, 'Dispatching letter');
 
-      if (res.ok && data?.success) {
+      if (data?.success) {
         setLetterStatus('delivered');
         setSendNowSuccess(`Letter successfully sent to ${letterData.recipientEmail}! Check your Gmail.`);
         if (data.previewUrl) {
@@ -116,7 +117,7 @@ export const ConfirmationCard = ({
           setLetterViewUrl(data.viewUrl);
         }
       } else {
-        setSendNowError(data?.error || `Failed to dispatch letter to recipient email (HTTP ${res.status}).`);
+        setSendNowError(data?.error || `Failed to dispatch letter to recipient email.`);
       }
     } catch (err: any) {
       setSendNowError(err.message || 'Network error attempting to send letter.');
@@ -129,13 +130,13 @@ export const ConfirmationCard = ({
     try {
       setTestLoading(true);
       setTestMessage(null);
-      const res = await fetch('/api/letters/send-test', {
+      const res = await fetch(getApiUrl('/api/letters/send-test'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ recipientEmail: letterData.recipientEmail }),
       });
-      const data = await res.json().catch(() => null);
-      if (res.ok && data?.success) {
+      const data = await parseApiResponse(res, 'Sending test dispatch');
+      if (data?.success) {
         setTestSent(true);
         if (data.previewUrl) {
           setPreviewUrl(data.previewUrl);

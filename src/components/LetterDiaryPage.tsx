@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { getApiUrl, parseApiResponse } from '../lib/api';
 import {
   Feather,
   Calendar,
@@ -126,12 +127,8 @@ export const LetterDiaryPage: React.FC<LetterDiaryPageProps> = ({ token, onNavig
       try {
         setLoading(true);
         setError(null);
-        const res = await fetch(`/api/letters/view/${encodeURIComponent(token)}`);
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.error || 'This letter could not be found in our time archives.');
-        }
-        const data = await res.json();
+        const res = await fetch(getApiUrl(`/api/letters/view/${encodeURIComponent(token)}`));
+        const data = await parseApiResponse(res, 'Loading letter');
         if (isMounted) {
           setLetter(data);
         }

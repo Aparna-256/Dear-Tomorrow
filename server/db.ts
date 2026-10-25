@@ -6,18 +6,69 @@ import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Ensure data folder exists
-const dataDir = path.resolve(__dirname, '../data');
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
+// Database client setup - supports local SQLite, Vercel /tmp, or Turso cloud LibSQL
+const isVercel = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+let dbUrl = process.env.TURSO_DATABASE_URL;
+let dbAuthToken = process.env.TURSO_AUTH_TOKEN;
+let dbLocation = dbUrl || 'file:memory';
+
+if (!dbUrl) {
+  const dataDir = isVercel ? '/tmp' : path.resolve(__dirname, '../data');
+  if (!fs.existsSync(dataDir)) {
+    try {
+      fs.mkdirSync(dataDir, { recursive: true });
+    } catch (e: any) {
+      console.warn('[Database] Read-only directory note:', e.message);
+    }
+  }
+  const dbPath = path.join(dataDir, 'dear_tomorrow.db');
+  dbLocation = dbPath;
+  dbUrl = `file:${dbPath}`;
 }
 
-const dbPath = path.join(dataDir, 'dear_tomorrow.db');
 export const db = createClient({
-  url: `file:${dbPath}`,
+  url: dbUrl,
+  authToken: dbAuthToken,
 });
 
+export async function getAppSetting(key: string): Promise<string | null> {
+  try {
+    const res = await db.execute({
+      sql: `SELECT value FROM app_settings WHERE key = ? LIMIT 1`,
+      args: [key],
+    });
+    if (res.rows.length > 0) {
+      return String(res.rows[0].value);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export async function setAppSetting(key: string, value: string): Promise<void> {
+  try {
+    const nowIso = new Date().toISOString();
+    await db.execute({
+      sql: `INSERT INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+      args: [key, value, nowIso],
+    });
+  } catch (err: any) {
+    console.warn(`[Database] Failed to persist setting ${key}:`, err.message);
+  }
+}
+
 export async function initDatabase() {
+  // App settings table: stores runtime configurations (e.g. email SMTP settings)
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS app_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )
+  `);
+
   // Letters table: persistent store of all scheduled letters
   await db.execute(`
     CREATE TABLE IF NOT EXISTS letters (
@@ -90,5 +141,5 @@ export async function initDatabase() {
     )
   `);
 
-  console.log(`[Database] SQLite initialized at ${dbPath}`);
+  console.log(`[Database] Database initialized at ${dbLocation}`);
 }

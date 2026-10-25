@@ -9,6 +9,7 @@ import {
   Heart
 } from 'lucide-react';
 import type { ConfirmedLetterData } from './ConfirmationCard';
+import { getApiUrl, parseApiResponse } from '../lib/api';
 
 interface LetterFormProps {
   onSuccess: (data: ConfirmedLetterData) => void;
@@ -377,7 +378,7 @@ export const LetterForm: React.FC<LetterFormProps> = ({ onSuccess }) => {
       // User's browser timezone
       const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
-      const response = await fetch('/api/letters', {
+      const response = await fetch(getApiUrl('/api/letters'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -391,26 +392,7 @@ export const LetterForm: React.FC<LetterFormProps> = ({ onSuccess }) => {
         }),
       });
 
-      let data: any = null;
-      const contentType = response.headers.get('content-type') || '';
-      if (contentType.includes('application/json')) {
-        try {
-          data = await response.json();
-        } catch {
-          data = null;
-        }
-      }
-
-      if (!response.ok) {
-        const errorMsg = data?.error || (
-          response.status === 404
-            ? 'The letter dispatch service could not be reached (404). Please ensure the backend server is running.'
-            : response.status === 502 || response.status === 504
-            ? 'Cannot connect to the backend server right now. Please check your connection and try again.'
-            : `Failed to seal and record your letter (Error ${response.status}).`
-        );
-        throw new Error(errorMsg);
-      }
+      const data = await parseApiResponse(response, 'Letter scheduling');
 
       if (!data || !data.id) {
         throw new Error('Received an invalid response from the time-capsule server. Please try again.');

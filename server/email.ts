@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
+import { getAppSetting } from './db.js';
 
 export interface LetterRecord {
   id: string;
@@ -253,11 +254,14 @@ export async function sendLetterEmail(letter: LetterRecord): Promise<SendResult>
   const html = generateLetterHtml(letter);
   const text = generateLetterPlainText(letter);
 
-  // 1. Check for Resend API Key
-  if (process.env.RESEND_API_KEY) {
+  // 1. Check for Resend API Key (env or database)
+  const resendApiKey = process.env.RESEND_API_KEY || (await getAppSetting('resend_api_key'));
+  const customEmailFrom = process.env.EMAIL_FROM || (await getAppSetting('email_from'));
+
+  if (resendApiKey) {
     try {
-      const resend = new Resend(process.env.RESEND_API_KEY.trim());
-      const fromEmail = process.env.EMAIL_FROM || 'Dear Tomorrow <letters@deartomorrow.app>';
+      const resend = new Resend(resendApiKey.trim());
+      const fromEmail = customEmailFrom || 'Dear Tomorrow <letters@deartomorrow.app>';
       const result = await resend.emails.send({
         from: fromEmail,
         to: letter.recipient_email,
@@ -279,7 +283,8 @@ export async function sendLetterEmail(letter: LetterRecord): Promise<SendResult>
     } catch (err: any) {
       const errMsg = err?.message || String(err);
       console.error(`[Email] Resend error for letter #${letter.id}:`, errMsg);
-      if (!process.env.SMTP_USER) {
+      const smtpUserFallback = process.env.SMTP_USER || (await getAppSetting('smtp_user'));
+      if (!smtpUserFallback) {
         return {
           success: false,
           error: `Resend delivery failed: ${errMsg}`,
@@ -290,11 +295,17 @@ export async function sendLetterEmail(letter: LetterRecord): Promise<SendResult>
   }
 
   // 2. Check for custom SMTP configuration (Gmail or generic SMTP)
-  if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+  const smtpUser = process.env.SMTP_USER || (await getAppSetting('smtp_user'));
+  const smtpPass = process.env.SMTP_PASS || (await getAppSetting('smtp_pass'));
+  const smtpHost = process.env.SMTP_HOST || (await getAppSetting('smtp_host')) || 'smtp.gmail.com';
+  const smtpPortStr = process.env.SMTP_PORT || (await getAppSetting('smtp_port')) || '587';
+  const smtpSecureStr = process.env.SMTP_SECURE || (await getAppSetting('smtp_secure'));
+
+  if (smtpUser && smtpPass) {
     try {
-      const host = (process.env.SMTP_HOST || 'smtp.gmail.com').trim();
-      const user = process.env.SMTP_USER.trim();
-      const pass = process.env.SMTP_PASS.trim().replace(/\s+/g, '');
+      const host = smtpHost.trim();
+      const user = smtpUser.trim();
+      const pass = smtpPass.trim().replace(/\s+/g, '');
       const isGmail = host.toLowerCase().includes('gmail') || user.toLowerCase().endsWith('@gmail.com');
 
       const transportOptions: any = isGmail
@@ -304,15 +315,15 @@ export async function sendLetterEmail(letter: LetterRecord): Promise<SendResult>
           }
         : {
             host,
-            port: Number(process.env.SMTP_PORT) || 587,
-            secure: process.env.SMTP_SECURE === 'true',
+            port: Number(smtpPortStr) || 587,
+            secure: smtpSecureStr === 'true' || smtpSecureStr === '1',
             auth: { user, pass },
           };
 
       const transporter = nodemailer.createTransport(transportOptions);
 
       const info = await transporter.sendMail({
-        from: process.env.EMAIL_FROM || `"Dear Tomorrow" <${user}>`,
+        from: customEmailFrom || `"Dear Tomorrow" <${user}>`,
         to: letter.recipient_email,
         subject,
         html,
