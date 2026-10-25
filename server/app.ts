@@ -19,6 +19,78 @@ export const app = express();
 app.use(cors());
 app.use(express.json({ limit: '2mb' }));
 
+const isVercelRuntime = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+
+function shouldRestoreApiPrefix(req: Request): boolean {
+  if (req.url.startsWith('/api')) {
+    return false;
+  }
+
+  // Check prefix-stripping proxy headers
+  const forwardedPrefix = req.headers['x-forwarded-prefix'];
+  if (forwardedPrefix === '/api' || forwardedPrefix === '/api/') {
+    return true;
+  }
+  const matchedPath = req.headers['x-matched-path'] as string | undefined;
+  if (matchedPath && matchedPath.startsWith('/api')) {
+    return true;
+  }
+  const originalUrl = (req.headers['x-original-url'] || req.headers['x-rewrite-url']) as string | undefined;
+  if (originalUrl && originalUrl.startsWith('/api')) {
+    return true;
+  }
+
+  // Restore prefix only for known backend route stems
+  const pathname = req.url.split('?')[0];
+  const isApiStem =
+    pathname.startsWith('/letters') ||
+    pathname.startsWith('/settings') ||
+    pathname.startsWith('/cron') ||
+    pathname === '/health';
+
+  if (isApiStem) {
+    return true;
+  }
+
+  // In a dedicated serverless function invocation, requests at root target the API entry point
+  if (isVercelRuntime && (pathname === '/' || pathname === '')) {
+    return true;
+  }
+
+  return false;
+}
+
+// Observable DB initialization with retry on failure
+let dbReadyPromise: Promise<void> | null = null;
+export async function ensureDatabaseReady(): Promise<void> {
+  if (!dbReadyPromise) {
+    dbReadyPromise = initDatabase().catch((err) => {
+      dbReadyPromise = null; // Clear cached promise on rejection so retry is possible
+      throw err; // Keep rejection observable to request handlers
+    });
+  }
+  return dbReadyPromise;
+}
+
+app.use(async (req: Request, _res: Response, next: (err?: any) => void) => {
+  // Restore /api prefix only for requests known to have reached the API through a prefix-stripping proxy
+  if (shouldRestoreApiPrefix(req)) {
+    req.url = '/api' + (req.url.startsWith('/') ? req.url : '/' + req.url);
+  }
+
+  // Bypass database initialization for health check routes before awaiting
+  const isHealthRoute = req.path === '/api/health' || req.path === '/api/letters/health';
+  if (req.path.startsWith('/api') && !isHealthRoute) {
+    try {
+      await ensureDatabaseReady();
+    } catch (err) {
+      return next(err);
+    }
+  }
+
+  next();
+});
+
 // Simple in-memory rate limiter per IP (max 30 requests per 10 minutes)
 const ipRateMap = new Map<string, { count: number; resetTime: number }>();
 function rateLimiter(req: Request, res: Response, next: () => void) {
@@ -42,9 +114,39 @@ function rateLimiter(req: Request, res: Response, next: () => void) {
   next();
 }
 
+// API Root info
+app.get(['/api', '/api/'], (_req: Request, res: Response) => {
+  res.json({
+    status: 'ok',
+    service: 'Dear Tomorrow API',
+    time: new Date().toISOString(),
+  });
+});
+
+app.get('/api/health', async (_req: Request, res: Response) => {
+  try {
+    await ensureDatabaseReady();
+    res.json({
+      status: 'ok',
+      service: 'Dear Tomorrow',
+      database: 'connected',
+      time: new Date().toISOString(),
+    });
+  } catch (err: any) {
+    res.status(503).json({
+      status: 'error',
+      service: 'Dear Tomorrow',
+      database: 'disconnected',
+      error: err?.message || 'Database initialization failed',
+      time: new Date().toISOString(),
+    });
+  }
+});
+
 // Health and Diagnostics
 app.get('/api/letters/health', async (_req: Request, res: Response) => {
   try {
+    await ensureDatabaseReady();
     const countRes = await db.execute(`SELECT COUNT(*) as count FROM letters WHERE status = 'pending'`);
     const count = countRes.rows[0]?.count ?? 0;
 
@@ -60,7 +162,12 @@ app.get('/api/letters/health', async (_req: Request, res: Response) => {
       emailConfigured: Boolean(resendKey || smtpUser),
     });
   } catch (err: any) {
-    res.status(500).json({ status: 'error', error: err.message });
+    res.status(503).json({
+      status: 'error',
+      service: 'Dear Tomorrow',
+      database: 'disconnected',
+      error: err.message,
+    });
   }
 });
 
@@ -539,13 +646,15 @@ app.use('/api', (_req: Request, res: Response) => {
   res.status(404).json({ error: 'The requested API route was not found in our archives.' });
 });
 
-// Serve frontend in production (when running standalone Express)
-const distPath = path.resolve(__dirname, '../dist');
-if (fs.existsSync(distPath)) {
-  app.use(express.static(distPath));
-  app.use((_req: Request, res: Response) => {
-    res.sendFile(path.join(distPath, 'index.html'));
-  });
+// Serve frontend only in standalone Node mode (not inside Vercel serverless functions)
+if (!isVercelRuntime) {
+  const distPath = path.resolve(__dirname, '../dist');
+  if (fs.existsSync(distPath)) {
+    app.use(express.static(distPath));
+    app.use((_req: Request, res: Response) => {
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
+  }
 }
 
 // Global JSON error handling middleware

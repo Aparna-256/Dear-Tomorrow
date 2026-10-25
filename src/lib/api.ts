@@ -24,7 +24,14 @@ export async function parseApiResponse<T = any>(
     return data as T;
   }
 
-  // Handle HTML or text error responses (e.g., from CDN or misconfigured proxy)
+  // Handle unexpected HTML responses (e.g., from CDN or SPA fallback rewrites)
+  if (contentType.includes('text/html')) {
+    throw new Error(
+      `${actionDescription} received an unexpected HTML page instead of API data. Please verify that your backend serverless functions are deployed or that VITE_API_URL points to your active server.`
+    );
+  }
+
+  // Handle plain text error responses
   const rawText = await response.text().catch(() => '');
   if (!response.ok) {
     if (response.status === 404) {
